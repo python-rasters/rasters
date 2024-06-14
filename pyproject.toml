@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=60", "setuptools-scm>=8.0", "wheel"]
+
+[project]
+name = "rasters"
+version = "1.0.2"
+description = "raster processing toolkit"
+readme = "README.md"
+authors = [
+    { name = "Gregory Halverson", email = "gregory.h.halverson@jpl.nasa.gov" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pandas",
+    "pillow",
+    "geopandas",
+    "h5py",
+    "matplotlib",
+    "numpy",
+    "pygeos",
+    "pyproj",
+    "rasterio",
+    "shapely",
+    "scikit-image",  # Corrected package name
+    "affine",
+    "astropy",
+    "pyresample",
+    "scipy",
+    "six",
+]
+
+requires-python = ">=3.10"
+
+[tool.setuptools.package-data]
+rasters = ["*.txt"]
+
+[project.optional-dependencies]
+macos = [
+    "pykdtree @ git+https://github.com/storpipfugl/pykdtree.git",
+]
