@@ -67,6 +67,7 @@ This package is being released according to the SPD-41 open-science requirements
 
 ## macOS
 ```
+brew install llvm
 pip install .[macos]
 ```
 
@@ -74,3 +75,21 @@ pip install .[macos]
 ```
 pip install .
 ```
+
+## Examples
+
+Import the `Raster` class from the `rasters` package.
+
+```python
+from rasters import Raster
+```
+
+Supply the filename to the `open` class method of the `Raster` class. Placing the variable for the `Raster` object at the end of a Jupyter notebook cell displays a map of the image. The default `cmap` used in the map is `viridis`.
+
+```python
+raster = Raster.open("ECOv002_L2T_LSTE_33730_008_11SPS_20240617T205018_0712_01_LST.tif")
+raster
+```
+
+![png](examples/Opening%20a%20GeoTIFF_3_0.png)
+    
