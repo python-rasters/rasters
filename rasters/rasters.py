@@ -1,7 +1,5 @@
 """
 This package manages the geographic information associated with data points in both swath and grid rasters.
-
-Adapted for ECOSTRESS by Gregory Halverson at the Jet Propulsion Laboratory.
 """
 from __future__ import annotations
 
@@ -12,15 +10,13 @@ import logging
 import math
 import os
 
-
 import warnings
 from abc import abstractmethod
-from collections.abc import Iterable
 from collections import OrderedDict
+from collections.abc import Iterable
 from os import makedirs
 from os.path import dirname, exists, abspath, expanduser, splitext
 from typing import List, Tuple, Iterator, Union, Any, Optional
-import pandas as pd
 
 import PIL
 import geopandas as gpd
@@ -49,7 +45,7 @@ from pyproj._crs import _CRS
 from pyresample import SwathDefinition, AreaDefinition
 from pyresample.kd_tree import get_neighbour_info, get_sample_from_neighbour_info
 from rasterio import DatasetReader
-# from rasterio.crs import CRS as RasterioCRS
+
 from rasterio.enums import MergeAlg
 from rasterio.features import geometry_mask
 from rasterio.warp import reproject, Resampling
@@ -62,6 +58,7 @@ from shapely.geometry.base import BaseGeometry, CAP_STYLE, JOIN_STYLE, geom_fact
 from shapely.ops import transform as shapely_transform
 from six import string_types
 
+import raster
 
 __author__ = "Gregory Halverson"
 
@@ -100,7 +97,7 @@ SKIMAGE_RESAMPLING_METHODS = {
     "quintic": 5
 }
 
-DEFAULT_CMAP = "viridis"
+DEFAULT_CMAP = "jet"
 DEFAULT_FIGSIZE = (7, 5)
 DEFAULT_DPI = 200
 
@@ -275,51 +272,15 @@ class SpatialGeometry:
 
         return UTM_proj4
 
-class CoordinateArray(SpatialGeometry):
-    def __init__(self, x: np.ndarray, y: ndarray, crs: Union[CRS, str] = WGS84, **kwargs):
-        super(CoordinateArray, self).__init__(crs=crs, **kwargs)
-        self.x = x
-        self.y = y
 
-    def bbox(self) -> BBox:
-        return BBox.from_points(self.x, self.y, crs=self.crs)
-
-    def centroid(self) -> Point:
-        return Point(nanmean(self.x), nanmean(self.y), crs=crs)
-    
-    def to_crs(self, crs: CRS | str) -> SpatialGeometry:
-        transformer = Transformer.from_crs(self.crs, crs, always_xy=True)
-        x, y = transformer.transform(self.x, self.y)
-        result = CoordinateArray(x, y, crs=crs)
-
-        return result
-    
-    @property
-    def latlon(self) -> CoordinateArray:
-        return self.to_crs(WGS84)
-
-    @property
-    def lat(self) -> np.ndarray:
-        """
-        array of latitudes
-        """
-        return self.latlon.y
-
-    @property
-    def lon(self) -> np.ndarray:
-        """
-        array of longitudes
-        """
-        return self.latlon.x
-
-class VectorGeometry(SpatialGeometry, shapely.geometry.base.BaseGeometry):
+class VectorGeometry(SpatialGeometry):
     def contain(self, other, crs: CRS = None, **kwargs) -> VectorGeometry:
         return self.__class__(other, crs=crs, **kwargs)
 
     def to_crs(self, crs: Union[CRS, str]) -> VectorGeometry:
         crs = CRS(crs)
         result = self.contain(
-            shapely.ops.transform(Transformer.from_crs(self.crs, crs, always_xy=True).transform, self),
+            shapely.ops.transform(Transformer.from_crs(self.crs, crs, always_xy=True).transform, self.geometry),
             crs=crs)
         return result
 
@@ -383,23 +344,35 @@ class MultiVectorGeometry(VectorGeometry):
     pass
 
 
-class Point(shapely.geometry.Point, SingleVectorGeometry):
-    def __init__(self, init: Any, *args, crs: Union[CRS, str] = WGS84, **kwargs):
-        if crs is None and isinstance(init, VectorGeometry):
-            crs = init.crs
+class Point(SingleVectorGeometry):
+    def __init__(self, *args, crs: Union[CRS, str] = WGS84):
+        if isinstance(args[0], Point):
+            geometry = args[0].geometry
+            crs = args[0].crs
+        else:
+            geometry = shapely.geometry.Point(*args)
 
-        shapely.geometry.Point.__init__(self, init, *args, **kwargs)
         VectorGeometry.__init__(self, crs=crs)
+
+        self.geometry = geometry
 
     @property
     def latlon(self) -> Point:
         return self.contain(
-            gpd.GeoDataFrame({}, geometry=[self], crs=str(self.crs)).to_crs(str(WGS84)).geometry[0],
+            gpd.GeoDataFrame({}, geometry=[self.geometry], crs=str(self.crs)).to_crs(str(WGS84)).geometry[0],
             crs=CRS(WGS84))
 
     @property
     def centroid(self) -> Point:
         return self
+
+    @property
+    def x(self):
+        return self.geometry.x
+
+    @property
+    def y(self):
+        return self.geometry.y
 
     def buffer(
             self,
@@ -412,7 +385,7 @@ class Point(shapely.geometry.Point, SingleVectorGeometry):
             single_sided=False) -> Polygon:
         return Polygon(
             shapely.geometry.Point.buffer(
-                self,
+                self.geometry,
                 distance=distance,
                 resolution=resolution,
                 quadsegs=quadsegs,
@@ -425,53 +398,58 @@ class Point(shapely.geometry.Point, SingleVectorGeometry):
         )
 
 
-class MultiPoint(MultiVectorGeometry, shapely.geometry.MultiPoint):
-    def __init__(self, *args, crs: Union[CRS, str] = WGS84, **kwargs):
-        shapely.geometry.MultiPoint.__init__(self, *args, **kwargs)
+class MultiPoint(MultiVectorGeometry):
+    def __init__(self, points, crs: Union[CRS, str] = WGS84):
+        if isinstance(points[0], MultiPoint):
+            geometry = points[0].geometry
+            crs = points[0].crs
+        else:
+            geometry = shapely.geometry.MultiPoint(points)
+
         VectorGeometry.__init__(self, crs=crs)
 
-    def shape_factory(self, *args):
-        return wrap_geometry(super(MultiPoint, self).shape_factory(*args), crs=self.crs)
+        self.geometry = geometry
 
+class Polygon(SingleVectorGeometry):
+    def __init__(self, *args, crs: Union[CRS, str] = WGS84):
+        if isinstance(args[0], Polygon):
+            geometry = args[0].geometry
+            crs = args[0].crs
+        else:
+            geometry = shapely.geometry.Polygon(*args)
 
-class LineString(SingleVectorGeometry, shapely.geometry.LineString):
-    def __init__(self, *args, crs: Union[CRS, str] = WGS84, **kwargs):
-        shapely.geometry.LineString.__init__(self, *args, **kwargs)
         VectorGeometry.__init__(self, crs=crs)
 
-
-class MultiLineString(MultiVectorGeometry, shapely.geometry.MultiLineString):
-    def __init__(self, *args, crs: Union[CRS, str] = WGS84, **kwargs):
-        shapely.geometry.MultiLineString.__init__(self, *args, **kwargs)
-        VectorGeometry.__init__(self, crs=crs)
-
-    def shape_factory(self, *args):
-        return wrap_geometry(super(MultiLineString, self).shape_factory(*args), crs=self.crs)
-
-
-class Polygon(SingleVectorGeometry, shapely.geometry.Polygon):
-    def __init__(self, shell: Any, holes: Any = None, crs: Union[CRS, str] = WGS84):
-        if crs is None and isinstance(shell, Polygon):
-            crs = shell.crs
-
-        shapely.geometry.Polygon.__init__(self, shell, holes)
-        VectorGeometry.__init__(self, crs=crs)
-
-    # def __new__(cls, shell: Any, holes: Any = None, crs: Union[CRS, str] = WGS84):
-    #     print(f"Polygon.__new__({cls})")
-    #     polygon = shapely.lib.Geometry.__new__(cls)
-    #     print(type(polygon))
-    #     shapely_polygon = shapely.geometry.Polygon.__new__(shell, holes)
-    #     print(type(shapely_polygon))
-    #     polygon.__dict__.update(shapely_polygon.__dict__)
-    #     print(type(polygon))
-    #
-    #     return polygon
+        self.geometry = geometry
 
     @property
     def centroid(self) -> Point:
         """Returns the geometric center of the object"""
-        return Point(geom_factory(self.impl['centroid'](self)), crs=self.crs)
+        return Point(self.geometry.centroid, crs=self.crs)
+
+    @property
+    def exterior(self):
+        return self.geometry.exterior
+
+    @property
+    def is_empty(self):
+        return self.geometry.is_empty
+
+    @property
+    def geom_type(self):
+        return self.geometry.geom_type
+
+    @property
+    def bounds(self):
+        return self.geometry.bounds
+
+    @property
+    def interiors(self):
+        return self.geometry.interiors
+
+    @property
+    def wkt(self):
+        return self.geometry.wkt
 
     @property
     def bbox(self) -> BBox:
@@ -488,16 +466,20 @@ class Polygon(SingleVectorGeometry, shapely.geometry.Polygon):
 
 
 class MultiPolygon(MultiVectorGeometry, shapely.geometry.MultiPolygon):
-    def __init__(self, *args, crs: Union[CRS, str] = WGS84, **kwargs):
-        shapely.geometry.MultiPolygon.__init__(self, *args, **kwargs)
+    def __init__(self, *args, crs: Union[CRS, str] = WGS84):
+        if isinstance(args[0], MultiPolygon):
+            geometry = args[0].geometry
+            crs = args[0].crs
+        else:
+            geometry = shapely.geometry.MultiPolygon(*args)
+
         VectorGeometry.__init__(self, crs=crs)
 
-    def shape_factory(self, *args):
-        return wrap_geometry(super(MultiPolygon, self).shape_factory(*args), crs=self.crs)
+        self.geometry = geometry
 
     @property
     def bbox(self) -> BBox:
-        return BBox(*self.bounds, crs=self.crs)
+        return BBox(*self.geometry.bounds, crs=self.crs)
 
 def wrap_geometry(geometry: Any, crs: Union[CRS, str] = None) -> SpatialGeometry:
     if isinstance(geometry, SpatialGeometry):
@@ -1263,7 +1245,7 @@ class RasterGeometry(SpatialGeometry):
 
         epsilon = 1e-14
 
-        antimeridian_wedge = Polygon([
+        antimeridian_wedge = shapely.geometry.Polygon([
             (epsilon, -np.pi),
             (epsilon ** 2, -epsilon),
             (0, epsilon),
@@ -1272,7 +1254,7 @@ class RasterGeometry(SpatialGeometry):
             (epsilon, -np.pi)
         ])
 
-        feature_shape = self.boundary_latlon
+        feature_shape = self.boundary_latlon.geometry
         sign = 2. * (0.5 * (feature_shape.bounds[1] + feature_shape.bounds[3]) >= 0.) - 1.
         polar_shape = shapely_transform(to_polar, feature_shape)
 
@@ -1284,10 +1266,13 @@ class RasterGeometry(SpatialGeometry):
         if isinstance(geometry, RasterGeometry):
             geometry = geometry.get_boundary(crs=self.crs)
 
+        if hasattr(geometry, "geometry"):
+            geometry = geometry.geometry
+
         if not isinstance(geometry, BaseGeometry):
             raise ValueError("invalid geometry for intersection")
 
-        result = self.boundary.intersects(geometry)
+        result = self.boundary.geometry.intersects(geometry)
 
         return result
 
@@ -2522,13 +2507,6 @@ class RasterGrid(RasterGeometry):
             geometry: Union[SpatialGeometry, (float, float, float, float)],
             buffer: int = None) -> Window:
         geometry = wrap_geometry(geometry)
-
-        if isinstance(geometry, Point):
-            row, col = self.index_point(geometry)
-            window = Window(col, row, 1, 1)
-
-            return window
-
         xmin, ymin, xmax, ymax = geometry.bbox.transform(self.crs)
 
         row_start, col_start = self.index_point(Point(xmin, ymax, crs=self.crs))
@@ -3068,43 +3046,17 @@ class Raster:
         return self.contain(self._array.astype(type))
 
     @classmethod
-    def read_point(cls, filename: str, point: Union[Point, shapely.geometry.Point]):
-        point = wrap_geometry(point)
-        cell = cls.open(filename, geometry=point)
-        value = cell[0,0][0][0]
-
-        return value
-
-    @classmethod
-    def read_points(cls, filename: str, points: List[Union[Point, shapely.geometry.Point]]):
-        points = [wrap_geometry(point) for point in points]
-        values = np.array([cls.read_point(filename, point) for point in points])
-
-        return values
-
-    @classmethod
-    def read_at_lat_lon(cls, filename: str, lat: np.ndarray, lon: np.ndarray) -> np.ndarray:
-        def value_function(lat, lon, filename):
-            return cls.read_point(filename, Point(lon, lat))
-        
-        df = pd.DataFrame({"lat": lat, "lon": lat})
-        df = df.groupby(["lat", "lon"]).apply(lambda x: x.assign(value=value_function(x.name[0], x.name[1], filename)))
-        values = np.array(df.value)
-
-        return values
-
-    @classmethod
     def open(
             cls,
             filename: str,
             nodata=None,
             remove=None,
-            geometry: SpatialGeometry = None,
+            geometry: RasterGeometry = None,
             buffer: int = None,
             window: Window = None,
             resampling: str = None,
             cmap: Union[Colormap, str] = None,
-            **kwargs) -> Union[Raster, np.ndarray]:
+            **kwargs) -> Raster:
         target_geometry = geometry
 
         if filename.startswith("~"):
@@ -3112,9 +3064,6 @@ class Raster:
 
         if ":" not in filename and not exists(filename):
             raise IOError(f"raster file not found: {filename}")
-
-        if isinstance(geometry, CoordinateArray):
-            return cls.read_at_lat_lon(filename, geometry.lat, geometry.lon)
 
         source_geometry = RasterGrid.open(filename)
 
@@ -4020,9 +3969,6 @@ class Raster:
 
         os.remove(temporary_filename)
 
-        if not exists(filename):
-            raise IOError(f"unable to create COG file: {filename}")
-
         XML_filename = f"{filename}.aux.xml"
 
         if remove_XML and exists(XML_filename):
@@ -4263,7 +4209,7 @@ class Raster:
 
             if cmap is None:
                 if self.cmap is None:
-                    cmap = DEFAULT_CMAP
+                    cmap = "jet"
                 else:
                     cmap = self.cmap
 
@@ -4407,7 +4353,7 @@ class Raster:
             self,
             cmap: Union[Colormap, str] = None,
             mode: str = "RGB") -> PIL.Image.Image:
-        DEFAULT_CONTINUOUS_CMAP = plt.get_cmap(DEFAULT_CMAP)
+        DEFAULT_CONTINUOUS_CMAP = plt.get_cmap("jet")
         DEFAULT_BINARY_CMAP = colors.ListedColormap(["black", "white"])
 
         if cmap is None:
@@ -4421,7 +4367,7 @@ class Raster:
             if cmap is None:
                 cmap = colors.ListedColormap(["black", "white"])
 
-        elif np.issubdtype(self.array.dtype, np.integer) and np.all(np.unique(self.array) == (0, 1)):
+        elif np.issubdtype(self.array.dtype, np.integer) and np.all(tuple(np.unique(self.array)) == (0, 1)):
             # data = self.array.astype(np.uint8)
             vmin = 0
             vmax = 1
@@ -4444,7 +4390,7 @@ class Raster:
 
         if cmap is None:
             if self.cmap is None:
-                cmap = DEFAULT_CMAP
+                cmap = "jet"
             else:
                 cmap = self.cmap
 
@@ -4778,22 +4724,6 @@ def clip(a: Raster or np.ndarray, a_min, a_max, out=None, **kwargs) -> Raster or
     if isinstance(a, Raster):
         result = a.contain(result)
         
-    return result
-
-def exp(values):
-    result = np.exp(values)
-
-    if isinstance(values, Raster):
-        result = values.contain(result)
-    
-    return result
-
-def abs(values):
-    result = np.abs(values)
-
-    if isinstance(values, Raster):
-        result = values.contain(result)
-    
     return result
 
 def mosaic(images: Iterator[Union[Raster, str]], geometry: RasterGeometry) -> Raster:
