@@ -71,9 +71,12 @@ brew install llvm
 pip install .[macos]
 ```
 
-## Other Platforms
+## Installation
+
+The `rasters` package is available as a [pip package on PyPi](https://pypi.org/project/rasters/):
+
 ```
-pip install .
+pip install rasters
 ```
 
 ## Examples
