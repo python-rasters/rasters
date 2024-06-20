@@ -65,15 +65,12 @@ This software has been deployed for ECOSTRESS and ET-Toolbox.
 
 This package is being released according to the SPD-41 open-science requirements of NASA-funded ROSES projects.
 
-## macOS
-```
-brew install llvm
-pip install .[macos]
-```
+## Installation
 
-## Other Platforms
+The `rasters` package is available as a [pip package on PyPi](https://pypi.org/project/rasters/):
+
 ```
-pip install .
+pip install rasters
 ```
 
 ## Examples
