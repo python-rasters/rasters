@@ -58,8 +58,6 @@ from shapely.geometry.base import BaseGeometry, CAP_STYLE, JOIN_STYLE, geom_fact
 from shapely.ops import transform as shapely_transform
 from six import string_types
 
-import raster
-
 __author__ = "Gregory Halverson"
 
 DEFAULT_MATPLOTLIB_STYLE = "dark_background"
