@@ -2755,7 +2755,7 @@ class Raster:
     def dtype(self):
         return self._array.dtype
 
-    def __array_prepare__(self, other: np.ndarray or Raster, *args, **kwargs) -> np.ndarray:
+    def __array_prepare__(self, other: Union[np.ndarray, Raster], *args, **kwargs) -> np.ndarray:
         if isinstance(other, Raster):
             array = other.array
         elif isinstance(other, np.ndarray):
@@ -2765,7 +2765,7 @@ class Raster:
 
         return array
 
-    def __array_wrap__(self, other: np.ndarray or Raster, **kwargs) -> Raster:
+    def __array_wrap__(self, other: Union[np.ndarray, Raster], **kwargs) -> Raster:
         if isinstance(other, Raster):
             other = other.array
         elif isinstance(other, np.ndarray):
@@ -2775,7 +2775,7 @@ class Raster:
 
         return self.contain(other)
 
-    def __array_finalize__(self, other: np.ndarray or Raster, **kwargs) -> Raster:
+    def __array_finalize__(self, other: Union[np.ndarray, Raster], **kwargs) -> Raster:
         if isinstance(other, Raster):
             other = other.array
         elif isinstance(other, np.ndarray):
@@ -2785,7 +2785,7 @@ class Raster:
 
         return self.contain(other)
 
-    def __add__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __add__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2798,7 +2798,7 @@ class Raster:
 
     __radd__ = __add__
 
-    def __sub__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __sub__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2809,13 +2809,13 @@ class Raster:
 
         return result
 
-    def __rsub__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __rsub__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         return self.contain(other - self.array)
 
     def __neg__(self):
         return self.contain(-(self.array))
 
-    def __mul__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __mul__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2828,7 +2828,7 @@ class Raster:
 
     __rmul__ = __mul__
 
-    def __pow__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __pow__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2839,7 +2839,7 @@ class Raster:
 
         return result
 
-    def __rpow__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __rpow__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2850,7 +2850,7 @@ class Raster:
 
         return result
 
-    def __div__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __div__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2861,7 +2861,7 @@ class Raster:
 
         return result
 
-    def __truediv__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __truediv__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2875,7 +2875,7 @@ class Raster:
     def __rtruediv__(self, other):
         return self.contain(other / self.array)
 
-    def __floordiv__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __floordiv__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2886,7 +2886,7 @@ class Raster:
 
         return result
 
-    def __mod__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __mod__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2897,7 +2897,7 @@ class Raster:
 
         return result
 
-    def __lshift__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __lshift__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2908,7 +2908,7 @@ class Raster:
 
         return result
 
-    def __rshift__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __rshift__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2919,7 +2919,7 @@ class Raster:
 
         return result
 
-    def __and__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __and__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2930,7 +2930,7 @@ class Raster:
 
         return result
 
-    def __or__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __or__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2941,7 +2941,7 @@ class Raster:
 
         return result
 
-    def __xor__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __xor__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2958,7 +2958,7 @@ class Raster:
 
         return result
 
-    def __lt__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __lt__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2969,7 +2969,7 @@ class Raster:
 
         return result
 
-    def __le__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __le__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2980,7 +2980,7 @@ class Raster:
 
         return result
 
-    def __gt__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __gt__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2991,7 +2991,7 @@ class Raster:
 
         return result
 
-    def __ge__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __ge__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -3002,7 +3002,7 @@ class Raster:
 
         return result
 
-    def __cmp__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __cmp__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -3013,7 +3013,7 @@ class Raster:
 
         return result
 
-    def __eq__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __eq__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -3024,7 +3024,7 @@ class Raster:
 
         return result
 
-    def __ne__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __ne__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -3284,7 +3284,7 @@ class Raster:
 
         return mask
 
-    def trim(self, mask: np.ndarray or Raster = None) -> Raster:
+    def trim(self, mask: Union[np.ndarray, Raster] = None) -> Raster:
         if mask is None:
             if self.dtype in (np.float32, np.float64):
                 mask = ~np.isnan(self.array)
@@ -4106,10 +4106,10 @@ class Raster:
             kd_tree=kd_tree
         )
 
-    def mask(self, mask: Raster or np.ndarray) -> Raster:
+    def mask(self, mask: Union[Raster, np.ndarray]) -> Raster:
         return where(mask, self, np.nan)
 
-    def fill(self, other: Raster or np.ndarray) -> Raster:
+    def fill(self, other: Union[Raster, np.ndarray]) -> Raster:
         if self.shape != other.shape:
             raise ValueError(f"raster with shape {self.shape} cannot be filled with raster of shape {other.shape}")
 
@@ -4416,7 +4416,7 @@ class Raster:
 class MultiRaster(Raster):
     def __init__(
             self,
-            array: np.ndarray or Raster,
+            array: Union[np.ndarray, Raster],
             geometry: RasterGeometry,
             nodata=None,
             cmap=None,
@@ -4707,7 +4707,7 @@ def where(condition, x, y):
     else:
         return Raster(result, geometry=geometry, cmap=cmap, metadata=metadata, nodata=nodata)
 
-def clip(a: Raster or np.ndarray, a_min, a_max, out=None, **kwargs) -> Raster or np.ndarray:
+def clip(a: Union[Raster, np.ndarray], a_min, a_max, out=None, **kwargs) -> Union[Raster, np.ndarray]:
     if a_min is None and a_max is None:
         return a
 
