@@ -2693,7 +2693,7 @@ class Raster:
 
     def __init__(
             self,
-            array: np.ndarray or Raster,
+            array: Union[np.ndarray, Raster],
             geometry: RasterGeometry,
             nodata=None,
             cmap=None,
