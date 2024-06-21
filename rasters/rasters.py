@@ -16,7 +16,7 @@ from collections import OrderedDict
 from collections.abc import Iterable
 from os import makedirs
 from os.path import dirname, exists, abspath, expanduser, splitext
-from typing import List, Tuple, Iterator, Union, Any, Optional
+from typing import List, Tuple, Iterator, Union, Any, Optional, Dict
 
 import PIL
 import geopandas as gpd
@@ -711,6 +711,30 @@ class KDTree:
                     segments=self.segments,
                     **kwargs
                 )
+    
+    def to_dict(self, output_dict: Dict = None) -> Dict:
+        if output_dict is None:
+            output_dict = {}
+
+        output_dict.update({
+            'neighbours': self.neighbours,
+            'epsilon': self.epsilon,
+            'reduce_data': self.reduce_data,
+            'nprocs': self.nprocs,
+            'segments': self.segments,
+            'resample_type': self.resample_type,
+            'source_geo_def': self.source_geo_def,
+            'source_geometry': self.source_geometry,
+            'target_geometry': self.target_geometry,
+            'target_geo_def': self.target_geo_def,
+            'radius_of_influence': self.radius_of_influence,
+            'valid_input_index': self.valid_input_index,
+            'valid_output_index': self.valid_output_index,
+            'index_array': self.index_array,
+            'distance_array': self.distance_array,
+        })
+
+        return output_dict
 
     def resample(
             self,
@@ -1709,7 +1733,7 @@ class RasterGeometry(SpatialGeometry):
             raise ValueError("geometry {} not recognized, must specify 'swath' or 'grid'".format(geometry_type))
 
     @abstractmethod
-    def to_dict(self):
+    def to_dict(self) -> Dict:
         pass
 
     @property
@@ -2033,7 +2057,7 @@ class RasterGeolocation(RasterGeometry):
     def grid(self) -> RasterGrid:
         return self.generate_grid(dest_crs=self.crs)
 
-    def to_dict(self, output_dict=None, write_geolocation_arrays=False):
+    def to_dict(self, output_dict: Dict = None, write_geolocation_arrays: bool = False) -> Dict:
         # FIXME this should conform to the CoverageJSON standard
         if output_dict is None:
             output_dict = {}
