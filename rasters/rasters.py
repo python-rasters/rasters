@@ -873,7 +873,7 @@ class RasterGeometry(SpatialGeometry):
         return [self.x_min, self.x_max, self.y_min, self.y_max]
 
     @property
-    def boundary_indices(self) -> (np.ndarray, np.ndarray):
+    def boundary_indices(self) -> Tuple[np.ndarray, np.ndarray]:
         height = self.rows
         width = self.cols
 
