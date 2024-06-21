@@ -19,6 +19,8 @@ dependencies = [
     "geopandas",
     "h5py",
     "matplotlib",
+    "msgpack",
+    "msgpack_numpy",
     "numpy",
     "pygeos",
     "pyproj",

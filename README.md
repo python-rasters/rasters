@@ -90,3 +90,8 @@ raster
 
 ![png](examples/Opening%20a%20GeoTIFF_3_0.png)
     
+## Changelog
+
+### 1.1.0
+
+The `KDTree` class can now save to file with the `.save` method and load from file with the `KDTree.load` class method.
