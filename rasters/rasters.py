@@ -16,8 +16,9 @@ from collections import OrderedDict
 from collections.abc import Iterable
 from os import makedirs
 from os.path import dirname, exists, abspath, expanduser, splitext
-from typing import List, Tuple, Iterator, Union, Any, Optional
-
+from typing import List, Tuple, Iterator, Union, Any, Optional, Dict
+import msgpack
+import msgpack_numpy
 import PIL
 import geopandas as gpd
 import h5py
@@ -608,6 +609,10 @@ class KDTree:
             nprocs: int = 1,
             segments=None,
             resample_type="nn",
+            valid_input_index: np.ndarray = None, 
+            valid_output_index: np.ndarray = None, 
+            index_array: np.ndarray = None, 
+            distance_array: np.ndarray = None,
             **kwargs):
         self.neighbours = neighbours
         self.epsilon = epsilon
@@ -696,21 +701,77 @@ class KDTree:
 
         self.radius_of_influence = float(self.radius_of_influence)
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore")
+        if any(item is None for item in [valid_input_index, valid_output_index, index_array, distance_array]):
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore")
 
-            self.valid_input_index, self.valid_output_index, self.index_array, self.distance_array = \
-                get_neighbour_info(
-                    source_geo_def=self.source_geo_def,
-                    target_geo_def=self.target_geo_def,
-                    radius_of_influence=self.radius_of_influence,
-                    neighbours=self.neighbours,
-                    epsilon=self.epsilon,
-                    reduce_data=self.reduce_data,
-                    nprocs=self.nprocs,
-                    segments=self.segments,
-                    **kwargs
-                )
+                self.valid_input_index, self.valid_output_index, self.index_array, self.distance_array = \
+                    get_neighbour_info(
+                        source_geo_def=self.source_geo_def,
+                        target_geo_def=self.target_geo_def,
+                        radius_of_influence=self.radius_of_influence,
+                        neighbours=self.neighbours,
+                        epsilon=self.epsilon,
+                        reduce_data=self.reduce_data,
+                        nprocs=self.nprocs,
+                        segments=self.segments,
+                        **kwargs
+                    )
+        else:
+            self.valid_input_index = valid_input_index
+            self.valid_output_index = valid_output_index
+            self.index_array = index_array
+            self.distance_array = distance_array
+    
+    def to_dict(self, output_dict: Dict = None) -> Dict:
+        if output_dict is None:
+            output_dict = {}
+
+        output_dict.update({
+            "source_geometry": self.source_geometry.to_dict(),
+            "target_geometry": self.target_geometry.to_dict(),
+            "neighbours": self.neighbours,
+            "epsilon": self.epsilon,
+            "reduce_data": self.reduce_data,
+            "nprocs": self.nprocs,
+            "segments": self.segments,
+            "resample_type": self.resample_type,
+            "radius_of_influence": self.radius_of_influence,
+            "valid_input_index": self.valid_input_index,
+            "valid_output_index": self.valid_output_index,
+            "index_array": self.index_array,
+            "distance_array": self.distance_array,
+            "neighbors": self.neighbours
+        })
+
+        return output_dict
+    
+    def save(self, filename: str):
+        with open(filename, "wb") as file:
+            file.write(msgpack.packb(self.to_dict(), default=msgpack_numpy.encode))
+    
+    @classmethod
+    def from_dict(cls, input_dict: Dict) -> KDTree:
+        return KDTree(
+            source_geometry=RasterGeometry.from_dict(input_dict["source_geometry"]),
+            target_geometry=RasterGeometry.from_dict(input_dict["target_geometry"]),
+            radius_of_influence=input_dict["radius_of_influence"],
+            neighbors=input_dict["neighbors"],
+            epsilon=input_dict["epsilon"],
+            reduce_data=input_dict["reduce_data"],
+            nprocs=input_dict["nprocs"],
+            segments=input_dict["segments"],
+            resample_type=input_dict["resample_type"],
+            valid_input_index=input_dict["valid_input_index"],
+            valid_output_index= input_dict["valid_output_index"],
+            index_array=input_dict["index_array"],
+            distance_array=input_dict["distance_array"]
+        )
+    
+    @classmethod
+    def load(cls, filename: str) -> KDTree:
+        with open(filename, "rb") as file:
+            return cls.from_dict(msgpack.unpackb(file.read(), object_hook=msgpack_numpy.decode))
 
     def resample(
             self,
@@ -873,7 +934,7 @@ class RasterGeometry(SpatialGeometry):
         return [self.x_min, self.x_max, self.y_min, self.y_max]
 
     @property
-    def boundary_indices(self) -> (np.ndarray, np.ndarray):
+    def boundary_indices(self) -> Tuple[np.ndarray, np.ndarray]:
         height = self.rows
         width = self.cols
 
@@ -1709,7 +1770,7 @@ class RasterGeometry(SpatialGeometry):
             raise ValueError("geometry {} not recognized, must specify 'swath' or 'grid'".format(geometry_type))
 
     @abstractmethod
-    def to_dict(self):
+    def to_dict(self) -> Dict:
         pass
 
     @property
@@ -2033,7 +2094,7 @@ class RasterGeolocation(RasterGeometry):
     def grid(self) -> RasterGrid:
         return self.generate_grid(dest_crs=self.crs)
 
-    def to_dict(self, output_dict=None, write_geolocation_arrays=False):
+    def to_dict(self, output_dict: Dict = None, write_geolocation_arrays: bool = False) -> Dict:
         # FIXME this should conform to the CoverageJSON standard
         if output_dict is None:
             output_dict = {}
@@ -2693,7 +2754,7 @@ class Raster:
 
     def __init__(
             self,
-            array: np.ndarray or Raster,
+            array: Union[np.ndarray, Raster],
             geometry: RasterGeometry,
             nodata=None,
             cmap=None,
@@ -2755,7 +2816,7 @@ class Raster:
     def dtype(self):
         return self._array.dtype
 
-    def __array_prepare__(self, other: np.ndarray or Raster, *args, **kwargs) -> np.ndarray:
+    def __array_prepare__(self, other: Union[np.ndarray, Raster], *args, **kwargs) -> np.ndarray:
         if isinstance(other, Raster):
             array = other.array
         elif isinstance(other, np.ndarray):
@@ -2765,7 +2826,7 @@ class Raster:
 
         return array
 
-    def __array_wrap__(self, other: np.ndarray or Raster, **kwargs) -> Raster:
+    def __array_wrap__(self, other: Union[np.ndarray, Raster], **kwargs) -> Raster:
         if isinstance(other, Raster):
             other = other.array
         elif isinstance(other, np.ndarray):
@@ -2775,7 +2836,7 @@ class Raster:
 
         return self.contain(other)
 
-    def __array_finalize__(self, other: np.ndarray or Raster, **kwargs) -> Raster:
+    def __array_finalize__(self, other: Union[np.ndarray, Raster], **kwargs) -> Raster:
         if isinstance(other, Raster):
             other = other.array
         elif isinstance(other, np.ndarray):
@@ -2785,7 +2846,7 @@ class Raster:
 
         return self.contain(other)
 
-    def __add__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __add__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2798,7 +2859,7 @@ class Raster:
 
     __radd__ = __add__
 
-    def __sub__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __sub__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2809,13 +2870,13 @@ class Raster:
 
         return result
 
-    def __rsub__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __rsub__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         return self.contain(other - self.array)
 
     def __neg__(self):
         return self.contain(-(self.array))
 
-    def __mul__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __mul__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2828,7 +2889,7 @@ class Raster:
 
     __rmul__ = __mul__
 
-    def __pow__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __pow__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2839,7 +2900,7 @@ class Raster:
 
         return result
 
-    def __rpow__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __rpow__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2850,7 +2911,7 @@ class Raster:
 
         return result
 
-    def __div__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __div__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2861,7 +2922,7 @@ class Raster:
 
         return result
 
-    def __truediv__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __truediv__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2875,7 +2936,7 @@ class Raster:
     def __rtruediv__(self, other):
         return self.contain(other / self.array)
 
-    def __floordiv__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __floordiv__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2886,7 +2947,7 @@ class Raster:
 
         return result
 
-    def __mod__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __mod__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2897,7 +2958,7 @@ class Raster:
 
         return result
 
-    def __lshift__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __lshift__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2908,7 +2969,7 @@ class Raster:
 
         return result
 
-    def __rshift__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __rshift__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2919,7 +2980,7 @@ class Raster:
 
         return result
 
-    def __and__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __and__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2930,7 +2991,7 @@ class Raster:
 
         return result
 
-    def __or__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __or__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2941,7 +3002,7 @@ class Raster:
 
         return result
 
-    def __xor__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __xor__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2958,7 +3019,7 @@ class Raster:
 
         return result
 
-    def __lt__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __lt__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2969,7 +3030,7 @@ class Raster:
 
         return result
 
-    def __le__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __le__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2980,7 +3041,7 @@ class Raster:
 
         return result
 
-    def __gt__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __gt__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -2991,7 +3052,7 @@ class Raster:
 
         return result
 
-    def __ge__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __ge__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -3002,7 +3063,7 @@ class Raster:
 
         return result
 
-    def __cmp__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __cmp__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -3013,7 +3074,7 @@ class Raster:
 
         return result
 
-    def __eq__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __eq__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -3024,7 +3085,7 @@ class Raster:
 
         return result
 
-    def __ne__(self, other: Raster or np.ndarray, *args, **kwargs) -> Raster:
+    def __ne__(self, other: Union[Raster, np.ndarray], *args, **kwargs) -> Raster:
         if isinstance(other, Raster):
             data = other.array
         else:
@@ -3284,7 +3345,7 @@ class Raster:
 
         return mask
 
-    def trim(self, mask: np.ndarray or Raster = None) -> Raster:
+    def trim(self, mask: Union[np.ndarray, Raster] = None) -> Raster:
         if mask is None:
             if self.dtype in (np.float32, np.float64):
                 mask = ~np.isnan(self.array)
@@ -4106,10 +4167,10 @@ class Raster:
             kd_tree=kd_tree
         )
 
-    def mask(self, mask: Raster or np.ndarray) -> Raster:
+    def mask(self, mask: Union[Raster, np.ndarray]) -> Raster:
         return where(mask, self, np.nan)
 
-    def fill(self, other: Raster or np.ndarray) -> Raster:
+    def fill(self, other: Union[Raster, np.ndarray]) -> Raster:
         if self.shape != other.shape:
             raise ValueError(f"raster with shape {self.shape} cannot be filled with raster of shape {other.shape}")
 
@@ -4416,7 +4477,7 @@ class Raster:
 class MultiRaster(Raster):
     def __init__(
             self,
-            array: np.ndarray or Raster,
+            array: Union[np.ndarray, Raster],
             geometry: RasterGeometry,
             nodata=None,
             cmap=None,
@@ -4707,7 +4768,7 @@ def where(condition, x, y):
     else:
         return Raster(result, geometry=geometry, cmap=cmap, metadata=metadata, nodata=nodata)
 
-def clip(a: Raster or np.ndarray, a_min, a_max, out=None, **kwargs) -> Raster or np.ndarray:
+def clip(a: Union[Raster, np.ndarray], a_min, a_max, out=None, **kwargs) -> Union[Raster, np.ndarray]:
     if a_min is None and a_max is None:
         return a
 
