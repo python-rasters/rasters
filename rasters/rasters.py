@@ -4233,7 +4233,7 @@ class Raster:
 
                 if cmap is None:
                     cmap = colors.ListedColormap(["black", "white"])
-            elif np.issubdtype(self.array.dtype, np.integer) and np.all(np.unique(data) == (0, 1)):
+            elif np.issubdtype(self.array.dtype, np.integer) and list(np.unique(data)) == [0, 1]:
                 boundaries = [0, 1]
                 ticks = [0, 1]
                 vmin = 0
