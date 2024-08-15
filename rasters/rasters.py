@@ -3719,7 +3719,10 @@ class Raster:
             dst_nodata = nodata
 
         # create destination array
-        destination = np.empty((grid.rows, grid.cols), destination_dtype)
+        if len(self.shape) == 2:
+            destination = np.empty((grid.rows, grid.cols), destination_dtype)
+        elif len(self.shape) == 3:
+            destination = np.empty((self.shape[0], grid.rows, grid.cols), destination_dtype)
 
         if str(self.dtype) == "bool":
             source = source.astype(np.uint16)
