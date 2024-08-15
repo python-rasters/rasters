@@ -4650,7 +4650,7 @@ class MultiRaster(Raster):
 
             ax.get_xaxis().set_major_formatter(tick_formatter)
             ax.get_yaxis().set_major_formatter(tick_formatter)
-            plt.xticks(rotation='-90')
+            plt.xticks(rotation=-90)
 
             if hide_ticks:
                 ax.xaxis.set_visible(False)
