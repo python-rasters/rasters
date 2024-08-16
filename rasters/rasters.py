@@ -273,6 +273,13 @@ class SpatialGeometry:
 
 
 class VectorGeometry(SpatialGeometry):
+    @property
+    def wkt(self):
+        return self.geometry.wkt
+    
+    def __repr__(self) -> str:
+        return self.wkt
+
     def contain(self, other, crs: CRS = None, **kwargs) -> VectorGeometry:
         return self.__class__(other, crs=crs, **kwargs)
 
