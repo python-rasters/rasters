@@ -43,6 +43,8 @@ from pyproj import CRS, Transformer
 from pyproj import transform
 from pyproj._crs import _CRS
 
+import pykdtree
+from scipy.spatial import cKDTree
 from pyresample import SwathDefinition, AreaDefinition
 from pyresample.kd_tree import get_neighbour_info, get_sample_from_neighbour_info
 from rasterio import DatasetReader
@@ -1941,7 +1943,7 @@ class RasterGeolocation(RasterGeometry):
         return geolocation
 
     def index_point(self, point: Point) -> (int, int):
-        dist, index = KDTree(np.c_[self.x.ravel(), self.y.ravel()]).query((point.x, point.y))
+        dist, index = cKDTree(np.c_[self.x.ravel(), self.y.ravel()]).query((point.x, point.y))
         index = np.unravel_index(index, self.shape)
 
         return index
