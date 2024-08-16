@@ -3726,7 +3726,10 @@ class Raster:
             dst_nodata = nodata
 
         # create destination array
-        destination = np.empty((grid.rows, grid.cols), destination_dtype)
+        if len(self.shape) == 2:
+            destination = np.empty((grid.rows, grid.cols), destination_dtype)
+        elif len(self.shape) == 3:
+            destination = np.empty((self.shape[0], grid.rows, grid.cols), destination_dtype)
 
         if str(self.dtype) == "bool":
             source = source.astype(np.uint16)
@@ -4657,7 +4660,7 @@ class MultiRaster(Raster):
 
             ax.get_xaxis().set_major_formatter(tick_formatter)
             ax.get_yaxis().set_major_formatter(tick_formatter)
-            plt.xticks(rotation='-90')
+            plt.xticks(rotation=-90)
 
             if hide_ticks:
                 ax.xaxis.set_visible(False)
