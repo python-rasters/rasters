@@ -24,7 +24,6 @@ import geopandas as gpd
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
-import pygeos
 import pyproj
 import rasterio
 import shapely
@@ -1910,7 +1909,7 @@ class RasterGeometry(SpatialGeometry):
         stack = np.stack([ul, ur, lr, ll], axis=1)
 
         pixel_outlines = MultiPolygon(
-            gpd.GeoDataFrame({}, geometry=[pygeos.creation.multipolygons(stack)]).geometry[0],
+            gpd.GeoDataFrame({}, geometry=[shapely.multipolygons(stack)]).geometry[0],
             crs=self.crs
         )
 
