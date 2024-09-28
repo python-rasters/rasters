@@ -2,11 +2,11 @@
 
 ![CI](https://github.com/gregory-halverson/rasters/actions/workflows/ci.yml/badge.svg)
 
+This Python software package provides a comprehensive solution for handling gridded and swath raster data. It offers an object-oriented interface for ease of use, treating rasters, raster geometries, and vector geometries as objects. This allows for seamless map visualization in Jupyter notebooks and efficient resampling between swath and grid geometries.
+
 [Gregory H. Halverson](https://github.com/gregory-halverson-jpl) (they/them)<br>
 [gregory.h.halverson@jpl.nasa.gov](mailto:gregory.h.halverson@jpl.nasa.gov)<br>
 NASA Jet Propulsion Laboratory 329G
-
-This Python software package provides a comprehensive solution for handling gridded and swath raster data. It offers an object-oriented interface for ease of use, treating rasters, raster geometries, and vector geometries as objects. This allows for seamless map visualization in Jupyter notebooks and efficient resampling between swath and grid geometries.
 
 The software addresses several challenges in the field. It makes swath remote sensing datasets more accessible and easier to work with. It also associates coordinate reference systems with vector geometries, simplifying transformations between projections.
 
