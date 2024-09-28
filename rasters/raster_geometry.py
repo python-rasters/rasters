@@ -15,7 +15,7 @@ import shapely
 from shapely.ops import transform as shapely_transform
 from shapely.geometry.base import BaseGeometry
 import geopandas as gpd
-from scipy.ndimage.interpolation import shift
+from scipy.ndimage import shift
 
 from .constants import *
 from .CRS import WGS84
