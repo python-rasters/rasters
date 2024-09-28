@@ -53,7 +53,7 @@ from rasterio.features import geometry_mask
 from rasterio.warp import reproject, Resampling
 from rasterio.windows import Window
 from scipy.ndimage import zoom
-from scipy.ndimage.interpolation import shift
+from scipy.ndimage import shift
 from scipy.spatial import cKDTree as KDTree
 from shapely.geometry import Point, LinearRing, MultiPoint
 from shapely.geometry.base import BaseGeometry, CAP_STYLE, JOIN_STYLE, geom_factory
