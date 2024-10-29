@@ -164,20 +164,48 @@ class RasterGeometry(SpatialGeometry):
         height = self.rows
         width = self.cols
 
+        # Handle empty grids
+        if height == 0 or width == 0:
+            return np.array([], dtype=np.int32), np.array([], dtype=np.int32)
+        
+        # Handle single cell grid
         if height == 1 and width == 1:
-            return np.full((1, 1), 0, dtype=np.int32), np.full((1, 1), 0, dtype=np.int32)
-
-        y_top = np.full((width,), 0, dtype=np.int32)
-        x_top = np.arange(width)
-        y_right = np.arange(1, height)
-        x_right = np.full((height - 1,), width - 1, dtype=np.int32)
-        y_bottom = np.full((width - 1,), height - 1, dtype=np.int32)
-        x_bottom = np.flipud(np.arange(width - 1))
-        y_left = np.flipud(np.arange(1, height - 1))
-        x_left = np.full((height - 2,), 0, dtype=np.int32)
-        x_indices = np.concatenate([x_top, x_right, x_bottom, x_left])
-        y_indices = np.concatenate([y_top, y_right, y_bottom, y_left])
-
+            return np.array([0], dtype=np.int32), np.array([0], dtype=np.int32)
+        
+        y_indices = []
+        x_indices = []
+        
+        # Top boundary (first row)
+        y_top = np.zeros(width, dtype=np.int32)
+        x_top = np.arange(width, dtype=np.int32)
+        y_indices.append(y_top)
+        x_indices.append(x_top)
+        
+        if height > 1:
+            # Right boundary (last column, excluding the first cell to avoid duplication)
+            y_right = np.arange(1, height, dtype=np.int32)
+            x_right = np.full_like(y_right, width - 1, dtype=np.int32)
+            y_indices.append(y_right)
+            x_indices.append(x_right)
+            
+            if width > 1:
+                # Bottom boundary (last row, excluding the last cell to avoid duplication)
+                y_bottom = np.full(width - 1, height - 1, dtype=np.int32)
+                x_bottom = np.arange(width - 2, -1, -1, dtype=np.int32)
+                y_indices.append(y_bottom)
+                x_indices.append(x_bottom)
+            
+            if width > 1 and height > 2:
+                # Left boundary (first column, excluding the first and last cells to avoid duplication)
+                y_left = np.arange(height - 2, 0, -1, dtype=np.int32)
+                x_left = np.zeros_like(y_left, dtype=np.int32)
+                y_indices.append(y_left)
+                x_indices.append(x_left)
+        
+        # Concatenate all boundary indices
+        y_indices = np.concatenate(y_indices) if y_indices else np.array([], dtype=np.int32)
+        x_indices = np.concatenate(x_indices) if x_indices else np.array([], dtype=np.int32)
+        
         return y_indices, x_indices
 
     @property
