@@ -42,6 +42,8 @@ from .constants import *
 from .where import where
 from .wrap_geometry import wrap_geometry
 from .CRS import WGS84
+from .raster_geometry import RasterGeometry
+from .raster_grid import RasterGrid
 
 if TYPE_CHECKING:
     from .CRS import CRS
@@ -54,9 +56,9 @@ if TYPE_CHECKING:
     from .polygon import Polygon
     from .multi_polygon import MultiPolygon
     from .kdtree import KDTree
-    from .raster_geometry import RasterGeometry
+    # from .raster_geometry import RasterGeometry
     from .raster_geolocation import RasterGeolocation
-    from .raster_grid import RasterGrid
+    # from .raster_grid import RasterGrid
     from .raster import Raster
     from .multi_raster import MultiRaster
 
