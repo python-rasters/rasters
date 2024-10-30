@@ -44,6 +44,7 @@ from .wrap_geometry import wrap_geometry
 from .CRS import WGS84
 from .raster_geometry import RasterGeometry
 from .raster_grid import RasterGrid
+from .raster_geolocation import RasterGeolocation
 
 if TYPE_CHECKING:
     from .CRS import CRS
@@ -57,9 +58,9 @@ if TYPE_CHECKING:
     from .multi_polygon import MultiPolygon
     from .kdtree import KDTree
     # from .raster_geometry import RasterGeometry
-    from .raster_geolocation import RasterGeolocation
+    # from .raster_geolocation import RasterGeolocation
     # from .raster_grid import RasterGrid
-    from .raster import Raster
+    # from .raster import Raster
     from .multi_raster import MultiRaster
 
 class Raster:
@@ -977,6 +978,8 @@ class Raster:
             kd_tree: KDTree = None,
             nodata: Any = None,
             **kwargs) -> Raster:
+        from .CRS import CRS
+
         if not isinstance(grid, RasterGrid):
             raise TypeError(f"target geometry must be a RasterGrid object, not {type(grid)}")
 
