@@ -18,7 +18,10 @@ from .raster_geolocation import RasterGeolocation
 from .out_of_bounds_error import OutOfBoundsError
 from .raster_grid import RasterGrid
 from .raster import Raster
+from .multi_raster import MultiRaster
 from .where import where
 from .clip import clip
+from .center_aeqd import center_aeqd
+from .local_UTM_proj4 import local_UTM_proj4
 
 __author__ = "Gregory Halverson"

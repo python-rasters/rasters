@@ -18,6 +18,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import colors
 
 from .constants import *
+from .raster import Raster
 
 if TYPE_CHECKING:
     from .raster_geometry import RasterGeometry

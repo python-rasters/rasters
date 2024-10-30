@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Union, Tuple, Dict, TYPE_CHECKING
+from typing import Union, Dict, TYPE_CHECKING
 
 import warnings
 
@@ -17,7 +17,32 @@ if TYPE_CHECKING:
     from .raster_geolocation import RasterGeolocation
     from .raster import Raster
 
+# Define CELL_SIZE_TO_SEARCH_DISTANCE_FACTOR if it's not already defined elsewhere
+CELL_SIZE_TO_SEARCH_DISTANCE_FACTOR = 2.0  # Or whatever value is appropriate
+
 class KDTree:
+    """
+    A class for performing efficient resampling of raster data using a KD-Tree.
+
+    This class uses pyresample to build a KD-Tree for fast nearest-neighbor 
+    lookup between two raster geometries (source and target). It supports 
+    resampling from both gridded and swath data.
+
+    Attributes:
+        source_geometry (RasterGeometry): The geometry of the source raster data.
+        target_geometry (RasterGeometry): The geometry of the target raster data.
+        radius_of_influence (float): The search radius for finding neighbors.
+        neighbours (int): The number of nearest neighbors to find.
+        epsilon (float):  Accuracy tolerance for neighbor search.
+        reduce_data (bool): Whether to reduce data before returning neighbor info.
+        nprocs (int): The number of processes to use for parallel computation.
+        segments (Any): Segmentation for parallel computation (optional).
+        resample_type (str): The resampling type ('nn' for nearest neighbor).
+        valid_input_index (np.ndarray): Indices of valid input data points.
+        valid_output_index (np.ndarray): Indices of valid output data points.
+        index_array (np.ndarray):  Array of neighbor indices.
+        distance_array (np.ndarray): Array of distances to neighbors.
+    """
     def __init__(
             self,
             source_geometry: RasterGeometry,
@@ -34,6 +59,28 @@ class KDTree:
             index_array: np.ndarray = None, 
             distance_array: np.ndarray = None,
             **kwargs):
+        """
+        Initializes a new KDTree object.
+
+        Args:
+            source_geometry (RasterGeometry): The geometry of the source raster data.
+            target_geometry (RasterGeometry): The geometry of the target raster data.
+            radius_of_influence (float, optional): The search radius for finding neighbors.
+                                                Defaults to a factor of the max cell size.
+            neighbours (int, optional): The number of nearest neighbors to find. Defaults to 1.
+            epsilon (float, optional): Accuracy tolerance for neighbor search. Defaults to 0.
+            reduce_data (bool, optional): Whether to reduce data before returning neighbor info. 
+                                        Defaults to True.
+            nprocs (int, optional): The number of processes to use for parallel computation. 
+                                    Defaults to 1.
+            segments (Any, optional): Segmentation for parallel computation. Defaults to None.
+            resample_type (str, optional): The resampling type. Defaults to "nn".
+            valid_input_index (np.ndarray, optional): Pre-computed indices of valid input data points.
+            valid_output_index (np.ndarray, optional): Pre-computed indices of valid output data points.
+            index_array (np.ndarray, optional): Pre-computed array of neighbor indices.
+            distance_array (np.ndarray, optional): Pre-computed array of distances to neighbors.
+            **kwargs: Additional keyword arguments passed to pyresample's get_neighbour_info.
+        """
         from .raster_geometry import RasterGeometry
         from .raster_geolocation import RasterGeolocation
         from .raster_grid import RasterGrid
@@ -45,13 +92,13 @@ class KDTree:
         self.segments = segments
         self.resample_type = resample_type
 
-        # validate destination geometry
+        # Validate destination geometry
         if not isinstance(target_geometry, RasterGeometry):
             raise TypeError("destination geometry must be a RasterGeometry object")
 
-        # build pyresample data structure for source
+        # Build pyresample data structure for source
         if isinstance(source_geometry, RasterGeolocation):
-            # transform swath geolocation arrays to lat/lon
+            # Transform swath geolocation arrays to lat/lon
             source_lat, source_lon = source_geometry.latlon_matrices
             self.source_geo_def = SwathDefinition(lats=source_lat, lons=source_lon)
         elif isinstance(source_geometry, RasterGrid):
@@ -81,9 +128,9 @@ class KDTree:
         self.source_geometry = source_geometry
         self.target_geometry = target_geometry
 
-        # build pyresample data structure for destination
+        # Build pyresample data structure for destination
         if isinstance(target_geometry, RasterGeolocation):
-            # transform grid geolocation arrays to lat/lon
+            # Transform grid geolocation arrays to lat/lon
             dest_lat, dest_lon = target_geometry.latlon_matrices
             self.target_geo_def = SwathDefinition(lats=dest_lat, lons=dest_lon)
         elif isinstance(target_geometry, RasterGrid):
@@ -97,7 +144,6 @@ class KDTree:
                 target_geometry.y_max
             ]
 
-            # destination_proj_dict = proj4_str_to_dict(destination_proj4)
             destination_rows, destination_cols = target_geometry.shape
 
             self.target_geo_def = AreaDefinition(
@@ -112,6 +158,7 @@ class KDTree:
         else:
             raise ValueError("destination type must be swath or grid")
 
+        # Calculate radius of influence if not provided
         if radius_of_influence is None:
             source_cell_size = source_geometry.cell_size_meters
             destination_cell_size = target_geometry.cell_size_meters
@@ -125,6 +172,7 @@ class KDTree:
 
         self.radius_of_influence = float(self.radius_of_influence)
 
+        # Compute neighbor info if not pre-computed
         if any(item is None for item in [valid_input_index, valid_output_index, index_array, distance_array]):
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore")

@@ -452,9 +452,9 @@ class RasterGeometry(SpatialGeometry):
 
     @property
     def center_aeqd(self) -> CRS:
-        from .CRS import CRS
+        from .center_aeqd import center_aeqd
 
-        return CRS.center_aeqd(self.centroid_latlon)
+        return center_aeqd(self.centroid_latlon)
 
     def get_bbox(self, crs: Union[CRS, str] = None) -> BBox:
         from .CRS import CRS
