@@ -29,6 +29,12 @@ if TYPE_CHECKING:
 class RasterGeolocation(RasterGeometry):
     """
     This class encapsulates the geolocation of swath data using geolocation arrays.
+    It inherits from RasterGeometry and provides methods for handling 
+    geographic coordinates, indexing, and spatial operations.
+
+    Attributes:
+        _x (np.ndarray): Two-dimensional x-coordinate geolocation array.
+        _y (np.ndarray): Two-dimensional y-coordinate geolocation array.
     """
 
     def __init__(
@@ -38,9 +44,18 @@ class RasterGeolocation(RasterGeometry):
             crs: Union[CRS, str] = WGS84,
             **kwargs):
         """
-        :param x: two-dimensional x-coordinate geolocation array
-        :param y: two-dimensional y-coordinate geolocation array
-        :param crs: CRS as proj4 string or pyproj.CRS object
+        Initializes RasterGeolocation with x and y coordinate arrays and a CRS.
+
+        Args:
+            x (np.ndarray): Two-dimensional x-coordinate geolocation array.
+            y (np.ndarray): Two-dimensional y-coordinate geolocation array.
+            crs (Union[CRS, str], optional): CRS as proj4 string or pyproj.CRS object. 
+                                             Defaults to WGS84.
+            **kwargs: Keyword arguments passed to the parent class constructor.
+
+        Raises:
+            ValueError: If x or y coordinate arrays contain NaN values, 
+                        or if no valid coordinates are provided.
         """
         super(RasterGeolocation, self).__init__(crs=crs, **kwargs)
 
@@ -57,18 +72,37 @@ class RasterGeolocation(RasterGeometry):
         self._y = y
 
         if self.is_geographic:
-            # self._x = where(logical_or(self._x <= 180, self._x >= 180), nan, self._x)
-            # self._y = where(logical_or(self._y <= -90, self._y >= 90), nan, self._y)
+            # Clip longitude values to -180 to 179.9999 and latitude values to -90 to 90
             self._x = np.clip(self._x, -180, 179.9999)
             self._y = np.clip(self._y, -90, 90)
 
     def __eq__(self, other: RasterGeolocation) -> bool:
+        """
+        Checks if this RasterGeolocation is equal to another.
+
+        Args:
+            other (RasterGeolocation): The other RasterGeolocation to compare to.
+
+        Returns:
+            bool: True if both objects have the same CRS and coordinate arrays, 
+                  False otherwise.
+        """
         return isinstance(other, RasterGeolocation) and \
                self.crs == other.crs and \
                np.array_equal(self.x, other.x) and \
                np.array_equal(self.y, other.y)
 
     def _slice(self, y_slice: slice, x_slice: slice) -> RasterGeometry:
+        """
+        Creates a subset of the RasterGeolocation using slices.
+
+        Args:
+            y_slice (slice): Slice object for the y-dimension.
+            x_slice (slice): Slice object for the x-dimension.
+
+        Returns:
+            RasterGeometry: A new RasterGeolocation representing the subset.
+        """
         crs = self.crs
         x = self.x[y_slice, x_slice]
         y = self.y[y_slice, x_slice]
@@ -82,18 +116,51 @@ class RasterGeolocation(RasterGeometry):
             x_vector: np.ndarray,
             y_vector: np.ndarray,
             crs: Union[CRS, str] = WGS84) -> RasterGeolocation:
+        """
+        Creates a RasterGeolocation from x and y coordinate vectors.
+
+        Args:
+            x_vector (np.ndarray): One-dimensional x-coordinate vector.
+            y_vector (np.ndarray): One-dimensional y-coordinate vector.
+            crs (Union[CRS, str], optional): CRS as proj4 string or pyproj.CRS object. 
+                                             Defaults to WGS84.
+
+        Returns:
+            RasterGeolocation: A new RasterGeolocation created from the vectors.
+        """
         x, y = np.meshgrid(x_vector, y_vector)
         geolocation = RasterGeolocation(x, y, crs=crs)
 
         return geolocation
 
     def index_point(self, point: Point) -> Tuple[int, int]:
+        """
+        Finds the nearest neighbor index of a point in the geolocation arrays.
+
+        Args:
+            point (Point): The point to find the index for.
+
+        Returns:
+            Tuple[int, int]: The (row, column) index of the nearest neighbor.
+        """
         dist, index = cKDTree(np.c_[self.x.ravel(), self.y.ravel()]).query((point.x, point.y))
         index = np.unravel_index(index, self.shape)
 
         return index
 
     def index(self, geometry: Union[RasterGeometry, Point, Polygon, Tuple[float, float, float, float]]):
+        """
+        Returns a boolean mask indexing the geolocation arrays based on a given geometry.
+
+        Args:
+            geometry (Union[RasterGeometry, Point, Polygon, Tuple[float, float, float, float]]): 
+                The geometry to index with. Can be a RasterGeometry, Point, Polygon, or a 
+                tuple representing a bounding box (xmin, ymin, xmax, ymax).
+
+        Returns:
+            np.ndarray: A boolean mask with the same shape as the geolocation arrays, 
+                        where True values indicate the indexed locations.
+        """
         geometry = wrap_geometry(geometry)
         xmin, ymin, xmax, ymax = geometry.bbox.transform(self.crs)
 
@@ -112,44 +179,54 @@ class RasterGeolocation(RasterGeometry):
 
     @property
     def x(self) -> np.ndarray:
+        """np.ndarray: The two-dimensional x-coordinate geolocation array."""
         return self._x
 
     @property
     def y(self) -> np.ndarray:
+        """np.ndarray: The two-dimensional y-coordinate geolocation array."""
         return self._y
 
     @property
     def xy(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Tuple[np.ndarray, np.ndarray]: A tuple containing the x and y coordinate arrays."""
         return self.x, self.y
 
     @property
     def rows(self) -> int:
+        """int: The number of rows in the geolocation arrays."""
         return self.x.shape[0]
 
     @property
     def cols(self) -> int:
+        """int: The number of columns in the geolocation arrays."""
         return self.y.shape[1]
 
     @property
     def x_min(self) -> float:
+        """float: The minimum x-coordinate value."""
         return self.bbox.x_min
 
     @property
     def x_max(self) -> float:
+        """float: The maximum x-coordinate value."""
         return self.bbox.x_max
 
     @property
     def y_min(self) -> float:
+        """float: The minimum y-coordinate value."""
         return self.bbox.y_min
 
     @property
     def y_max(self) -> float:
+        """float: The maximum y-coordinate value."""
         return self.bbox.y_max
 
     @property
     def width(self) -> float:
         """
-        Width of extent in projected units.
+        float: Width of extent in projected units. 
+               Handles geographic coordinates crossing the antimeridian.
         """
 
         x_max = self.x_max

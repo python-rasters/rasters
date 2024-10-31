@@ -13,16 +13,46 @@ if TYPE_CHECKING:
     from .polygon import Polygon
     from .multi_polygon import MultiPolygon
 
+WGS84 = CRS.from_epsg(4326)  # Define WGS84 CRS
+
 def wrap_geometry(geometry: Any, crs: Union[CRS, str] = None) -> SpatialGeometry:
+    """
+    Converts a given geometry into a SpatialGeometry object.
+
+    This function handles various geometry types, including:
+     - Existing SpatialGeometry objects: Returned as is.
+     - Shapely geometry objects: Converted to the corresponding SpatialGeometry type.
+     - GeoJSON strings: Parsed and converted to SpatialGeometry.
+
+    Args:
+        geometry: The geometry to convert. Can be a SpatialGeometry object,
+                  a shapely geometry object, or a GeoJSON string.
+        crs: The coordinate reference system of the geometry. If None, WGS84 is used.
+             Can be a CRS object or a string representation of a CRS.
+
+    Returns:
+        A SpatialGeometry object representing the input geometry.
+
+    Raises:
+        ValueError: If the geometry type is not supported.
+    """
+
     if isinstance(geometry, SpatialGeometry):
+        # If the geometry is already a SpatialGeometry, return it as is
         return geometry
 
     if crs is None:
+        # Default to WGS84 if no CRS is provided
         crs = WGS84
+    elif isinstance(crs, str):
+        # Convert string representation of CRS to CRS object
+        crs = CRS.from_string(crs)
 
     if isinstance(geometry, str):
+        # Parse GeoJSON string into a shapely geometry object
         geometry = shapely.geometry.shape(geometry)
 
+    # Convert shapely geometry objects to corresponding SpatialGeometry types
     if isinstance(geometry, shapely.geometry.Point):
         return Point(geometry, crs=crs)
     elif isinstance(geometry, shapely.geometry.MultiPoint):
