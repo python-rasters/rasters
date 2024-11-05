@@ -970,6 +970,9 @@ class Raster:
         return self.contain(geometry=self.geometry.geolocation)
 
     def to_point(self, point: Point):
+        if not self.geometry.intersects(point):
+            return np.nan
+
         index = self.geometry.index_point(point)
         value = self.array[index]
 
