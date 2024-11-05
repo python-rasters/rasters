@@ -969,6 +969,12 @@ class Raster:
     def geolocation(self) -> Raster:
         return self.contain(geometry=self.geometry.geolocation)
 
+    def to_point(self, point: Point):
+        index = self.geometry.index_point(point)
+        value = self.array[index]
+
+        return value
+
     # @profile
     def to_grid(
             self,
@@ -1086,7 +1092,7 @@ class Raster:
 
     def to_geometry(
             self,
-            target_geometry: RasterGeometry,
+            target_geometry: Union[RasterGeometry, Point],
             resampling: str = None,
             search_radius_meters: float = None,
             kd_tree: KDTree = None,
@@ -1117,6 +1123,8 @@ class Raster:
                 kd_tree=kd_tree,
                 **kwargs
             )
+        elif isinstance(target_geometry, Point):
+            return self.to_point(target_geometry)
         else:
             raise ValueError(f"unsupported target geometry type: {type(target_geometry)}")
 
