@@ -69,15 +69,15 @@ class CRS(pyproj.CRS):
 
         return super(CRS, self).__eq__(other=other)
 
-    @property
-    def _crs(self) -> Any:
-        """
-        Retrieve the underlying Cython based _CRS object. This is used internally by pyproj
-        for performance optimization.
+    # @property
+    # def _crs(self) -> Any:
+    #     """
+    #     Retrieve the underlying Cython based _CRS object. This is used internally by pyproj
+    #     for performance optimization.
 
-        Note: The implementation might change in future pyproj versions.
-        """
-        return self._crs  # Directly access the _crs attribute
+    #     Note: The implementation might change in future pyproj versions.
+    #     """
+    #     return self._crs  # Directly access the _crs attribute
 
     @property
     def epsg_string(self) -> Optional[str]:
