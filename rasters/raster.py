@@ -974,7 +974,7 @@ class Raster:
             return np.nan
 
         index = self.geometry.index_point(point)
-        value = self.array[index]
+        value = self.array[index].item()
 
         return value
 
@@ -1101,6 +1101,8 @@ class Raster:
             kd_tree: KDTree = None,
             nodata: Any = None,
             **kwargs) -> Raster:
+        from .point import Point
+
         if nodata is None:
             nodata = self.nodata
 
