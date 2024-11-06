@@ -969,14 +969,25 @@ class Raster:
     def geolocation(self) -> Raster:
         return self.contain(geometry=self.geometry.geolocation)
 
-    # FIXME point extraction needs to be nearest for discrete types, and optionally nearest or inverse-distance weighting for continuous types
-
-    def to_point(self, point: Point):
+    def to_point(self, point: Point, method: str = None, **kwargs):
         if not self.geometry.intersects(point):
             return np.nan
+        
+        if method is None:
+            if np.issubdtype(self.dtype, np.integer):
+                method = "nearest"
+            elif np.issubdtype(self.dtype, np.floating):
+                method = "IDW"
+            else:
+                method = "nearest"
 
-        index = self.geometry.index_point(point)
-        value = self.array[index].item()
+        if method == "nearest":
+            index = self.geometry.index_point(point)
+            value = self.array[index].item()
+        elif method == "IDW":
+            value = self.IDW(geometry=point, **kwargs)
+        else:
+            raise ValueError(f"unrecognized point sampling method: {method}")
 
         return value
 
@@ -1148,17 +1159,49 @@ class Raster:
     def pixel_outlines(self) -> gpd.GeoDataFrame:
         return gpd.GeoDataFrame({"value": self.array.flatten()}, geometry=list(self.geometry.pixel_outlines))
 
-    def IDW(self, geometry: VectorGeometry, power: float = 2):
+    def IDW(self, geometry: VectorGeometry, power: float = 2) -> Union[float, gpd.GeoDataFrame]:
+        """
+        Performs Inverse Distance Weighting (IDW) interpolation on a given geometry.
+
+        Args:
+            geometry (VectorGeometry): The target geometry for interpolation.
+            power (float, optional): The power parameter controlling the rate of decay of distance influence. Defaults to 2.
+
+        Returns:
+            Union[float, gpd.GeoDataFrame]:
+                - If the input geometry is a single point, returns the interpolated value as a float.
+                - If the input geometry is a GeoDataFrame, returns a new GeoDataFrame with the interpolated values.
+
+        Raises:
+            ValueError: If the input geometry is not supported.
+        """
+
         if isinstance(geometry, shapely.geometry.Point):
+            # Wrap the point geometry for efficient distance calculations
             geometry = wrap_geometry(geometry)
+
+            # Get the centroids of the pixels in the underlying raster
             pixel_centroids = self.geometry.pixel_centroids
+
+            # Calculate distances between the input point and pixel centroids
             distances = geometry.distances(pixel_centroids)
+
+            # Extract values from the raster array
             value = self.array.flatten()
+
+            # Convert distances to a NumPy array
             distance = np.array(distances["distance"])
+
+            # Calculate weights based on inverse distance
             weight = 1 / distance ** power
+
+            # Calculate weighted values
             weighted = value * weight
+
+            # Calculate the interpolated value using weighted summation
             result = np.nansum(weighted) / np.nansum(weight)
 
+            # Return the result based on the input geometry type
             if isinstance(geometry, SingleVectorGeometry):
                 return result
             else:
