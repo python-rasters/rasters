@@ -969,6 +969,8 @@ class Raster:
     def geolocation(self) -> Raster:
         return self.contain(geometry=self.geometry.geolocation)
 
+    # FIXME point extraction needs to be nearest for discrete types, and optionally nearest or inverse-distance weighting for continuous types
+
     def to_point(self, point: Point):
         if not self.geometry.intersects(point):
             return np.nan
