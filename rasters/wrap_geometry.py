@@ -36,6 +36,10 @@ def wrap_geometry(geometry: Any, crs: Union[CRS, str] = None) -> SpatialGeometry
     Raises:
         ValueError: If the geometry type is not supported.
     """
+    from .point import Point
+    from .multi_point import MultiPoint
+    from .polygon import Polygon
+    from .multi_polygon import MultiPolygon
 
     if isinstance(geometry, SpatialGeometry):
         # If the geometry is already a SpatialGeometry, return it as is

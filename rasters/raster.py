@@ -1147,13 +1147,18 @@ class Raster:
         return gpd.GeoDataFrame({"value": self.array.flatten()}, geometry=list(self.geometry.pixel_outlines))
 
     def IDW(self, geometry: VectorGeometry, power: float = 2):
-        if isinstance(geometry, shapely.geometry.Point):
+        from .point import Point
+        from .vector_geometry import SingleVectorGeometry
+
+        if isinstance(geometry, (Point, shapely.geometry.Point)):
             geometry = wrap_geometry(geometry)
             pixel_centroids = self.geometry.pixel_centroids
             distances = geometry.distances(pixel_centroids)
             value = self.array.flatten()
             distance = np.array(distances["distance"])
+            # print(f"distances: {distance}")
             weight = 1 / distance ** power
+            # print(f"weights: {weight}")
             weighted = value * weight
             result = np.nansum(weighted) / np.nansum(weight)
 
@@ -1278,7 +1283,7 @@ class Raster:
             filename: str,
             compression: str = None,
             preview_quality: int = 20,
-            cmap: Union[Colormap, str] = DEFAULT_CMAP,
+            cmap: Union[Colormap, str] = None,
             use_compression: bool = True,
             include_preview: bool = True,
             overwrite: bool = True,

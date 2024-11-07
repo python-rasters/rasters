@@ -1087,6 +1087,7 @@ class RasterGeometry(SpatialGeometry):
 
         x, y = self.xy
         pixel_centroids = wrap_geometry(MultiPoint(np.stack([x.flatten(), y.flatten()], axis=1)), crs=self.crs)
+        pixel_centroids._crs = self.crs
 
         return pixel_centroids
 
