@@ -1,15 +1,18 @@
 from __future__ import annotations
 
-from typing import Union
+from typing import Union, Iterable
 
 import geopandas as gpd
 import shapely
 from shapely.geometry.base import CAP_STYLE, JOIN_STYLE
 
+from rasters.wrap_geometry import wrap_geometry
+
 from .constants import *
 from .CRS import CRS, WGS84
 from .vector_geometry import VectorGeometry, SingleVectorGeometry
 from .polygon import Polygon
+from .bbox import BBox
 
 class Point(SingleVectorGeometry):
     """
@@ -128,3 +131,69 @@ class Point(SingleVectorGeometry):
         )
         # Return a new Polygon object with the buffer geometry and the point's CRS
         return Polygon(buffer_geom, crs=self.crs)
+
+    @property
+    def bbox(self) -> BBox:
+        """
+        Returns the bounding box of the point.
+
+        Returns:
+            BBox: The bounding box of the point.
+        """
+        return BBox(self.x, self.y, self.x, self.y, crs=self.crs)
+    
+    def distance(self, other: Point) -> float:
+        """
+        Returns the distance between this point and another point.
+
+        Args:
+            other (Point): The other point.
+
+        Returns:
+            float: The distance between the two points.
+        """
+        if isinstance(other, shapely.geometry.Point):
+            other = Point(other, crs=WGS84)
+
+        projected = self.projected
+        # print(f"projects CRS: {projected.crs}")
+        # print(f"other: {other} {type(other)} {other.crs}")
+        other_projected = other.to_crs(projected.crs)
+        other_projected._crs = projected.crs
+        # print(f"other_projected.crs: {other_projected.crs}")
+        # print(f"other_projected: {other_projected} {type(other_projected)}")
+        x, y = projected.geometry.x, projected.geometry.y
+        # print(f"x: {x}, y: {y}")
+        other_x, other_y = other.geometry.x, other.geometry.y
+        # print(f"other_x: {other_x}, other_y: {other_y}")
+        distance = ((x - other_x) ** 2 + (y - other_y) ** 2) ** 0.5
+
+        return distance
+    
+    from .multi_point import MultiPoint
+
+    def distances(self, points: Union[MultiPoint, Iterable[Point]]) -> gpd.GeoDataFrame:
+        """
+        Calculate the distances between this geometry and a set of points.
+
+        Args:
+            points (Union[MultiPoint, Iterable[Point]]): The points to calculate distances to.
+
+        Returns:
+            gpd.GeoDataFrame: A GeoDataFrame with the distances between the geometry and the points.
+                                The GeoDataFrame has a 'distance' column and a 'geometry' column
+                                containing LineStrings between the geometry and each point.
+        """
+        points = wrap_geometry(points)
+
+        geometry = []
+        distance_column = []
+
+        for point in [wrap_geometry(point) for point in points.geoms]:
+            point._crs = points._crs
+            geometry.append(shapely.geometry.LineString([self.geometry, point.geometry]))
+            distance_column.append(self.distance(point))
+
+        distances = gpd.GeoDataFrame({"distance": distance_column}, geometry=geometry)
+
+        return distances

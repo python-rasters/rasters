@@ -145,31 +145,6 @@ class VectorGeometry(SpatialGeometry):
         else:
             return self
 
-    def distances(self, points: Union[MultiPoint, Iterable[Point]]) -> gpd.GeoDataFrame:
-        """
-        Calculate the distances between this geometry and a set of points.
-
-        Args:
-            points (Union[MultiPoint, Iterable[Point]]): The points to calculate distances to.
-
-        Returns:
-            gpd.GeoDataFrame: A GeoDataFrame with the distances between the geometry and the points.
-                                The GeoDataFrame has a 'distance' column and a 'geometry' column
-                                containing LineStrings between the geometry and each point.
-        """
-        points = [wrap_geometry(point) for point in points]
-
-        geometry = []
-        distance_column = []
-
-        for point in points:
-            geometry.append(shapely.geometry.LineString([self, point]))
-            distance_column.append(self.projected.distance(point.projected))
-
-        distances = gpd.GeoDataFrame({"distance": distance_column}, geometry=geometry)
-
-        return distances
-
 
 class SingleVectorGeometry(VectorGeometry):
     """
@@ -181,4 +156,19 @@ class MultiVectorGeometry(VectorGeometry):
     """
     Base class for multi vector geometries (e.g., MultiPoint, MultiLineString, MultiPolygon).
     """
-    pass
+    @property
+    def geoms(self):
+        return self.geometry.geoms
+
+    def __getitem__(self, index):
+        if isinstance(index, int):
+            return self.geoms[index]
+        
+        return self.geometry[index]
+
+    # @property
+    # def geoms(self) -> list[VectorGeometry]:
+    #     """
+    #     The list of geometries in the multi geometry.
+    #     """ 
+    #     return [self.contain(geometry) for geometry in self.geometry.geoms]
