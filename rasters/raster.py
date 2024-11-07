@@ -1218,6 +1218,8 @@ class Raster:
             # Calculate the interpolated value using weighted summation
             result = np.nansum(weighted) / np.nansum(weight)
 
+            result = result.item()
+
             # Return the result based on the input geometry type
             if isinstance(geometry, SingleVectorGeometry):
                 return result
