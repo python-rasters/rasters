@@ -426,12 +426,14 @@ class Raster:
             filename: str,
             nodata=None,
             remove=None,
-            geometry: RasterGeometry = None,
+            geometry: Union[RasterGeometry, Point] = None,
             buffer: int = None,
             window: Window = None,
             resampling: str = None,
             cmap: Union[Colormap, str] = None,
             **kwargs) -> Raster:
+        from .point import Point
+
         target_geometry = geometry
 
         if filename.startswith("~"):
@@ -441,6 +443,9 @@ class Raster:
             raise IOError(f"raster file not found: {filename}")
 
         source_geometry = RasterGrid.open(filename)
+
+        if buffer is None and isinstance(target_geometry, Point):
+            buffer = 1
 
         if window is None and target_geometry is not None:
             window = source_geometry.window(geometry=target_geometry, buffer=buffer)
@@ -475,12 +480,16 @@ class Raster:
                     crs=CRS
                 )
 
-        image = Raster(data, geometry, nodata=nodata, filename=filename, cmap=cmap, **kwargs)
+        result = Raster(data, geometry, nodata=nodata, filename=filename, cmap=cmap, **kwargs)
 
         if isinstance(target_geometry, RasterGeometry):
-            image = image.to_geometry(target_geometry, resampling=resampling)
+            result = result.to_geometry(target_geometry, resampling=resampling)
+        elif isinstance(target_geometry, Point):
+            # print(result.array)
+            # print(result.crs)
+            result = result.to_point(target_geometry)
 
-        return image
+        return result
 
     @classmethod
     def merge(
@@ -970,7 +979,15 @@ class Raster:
         return self.contain(geometry=self.geometry.geolocation)
 
     def to_point(self, point: Point):
+        # print(f"to_point({point})")
+        if isinstance(point, shapely.geometry.Point):
+            point = Point(point, crs=WGS84)
+        
+        point = point.to_crs(self.crs)
+        point._crs = self.crs
+
         if not self.geometry.intersects(point):
+            # print("does not intersect")
             return np.nan
 
         index = self.geometry.index_point(point)
