@@ -47,6 +47,7 @@ def where(condition, x, y):
     Raster([[ 0,  1,  2,  3,  4],
             [10, 11, 12, 13, 14]])
     """
+    from .raster import Raster
 
     # Determine the geometry of the output Raster (if any)
     geometry = None
