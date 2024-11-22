@@ -537,16 +537,10 @@ class RasterGrid(RasterGeometry):
         return subset
     
     def shift_xy(self, x_shift: float, y_shift: float) -> RasterGrid:
-        cell_width = self.cell_width
-        cell_height = self.cell_height
-        x_origin = self.x_origin + x_shift
-        y_origin = self.y_origin + y_shift
-        shifted_x_origin = x_origin + x_shift
-        shifted_y_origin = y_origin + y_shift
-        shifted_affine = Affine(cell_width, 0, shifted_x_origin, 0, cell_height, shifted_y_origin)
-        shifted_grid = RasterGrid.from_affine(shifted_affine, self.rows, self.cols, self.crs)
+        new_affine = self.affine * Affine.translation(x_shift / self.cell_size, y_shift / self.cell_size)
+        grid = RasterGrid.from_affine(new_affine, self.rows, self.cols, self.crs)
 
-        return shifted_grid
+        return grid
     
     def shift_distance(self, distance: float, direction: float) -> RasterGrid:
         x_shift = distance * np.cos(np.radians(direction))
