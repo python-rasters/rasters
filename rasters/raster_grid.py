@@ -535,6 +535,19 @@ class RasterGrid(RasterGeometry):
         subset = self[slices]
 
         return subset
+    
+    def shift_xy(self, x_shift: float, y_shift: float) -> RasterGrid:
+        new_affine = self.affine * Affine.translation(x_shift, y_shift)
+        grid = RasterGrid.from_affine(new_affine, self.rows, self.cols, self.crs)
+
+        return grid
+    
+    def shift_distance(self, distance: float, direction: float) -> RasterGrid:
+        x_shift = distance * np.cos(np.radians(direction))
+        y_shift = distance * np.sin(np.radians(direction))
+        grid = self.shift_xy(x_shift, y_shift)
+
+        return grid
 
     @property
     def x(self) -> np.ndarray:
