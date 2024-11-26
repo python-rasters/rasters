@@ -1,66 +1,46 @@
 from __future__ import annotations
 
-from typing import Any, Union, Tuple, List, Dict, TYPE_CHECKING
-
-import warnings
-
+import io
+import logging
 import os
+import warnings
 from os import makedirs
 from os.path import expanduser, exists, abspath, dirname, splitext
-
-import io
-
-# TODO get rid of six
-from six import string_types
-
-import logging
-
-import numpy as np
-import skimage
-
-import shapely
-import geopandas as gpd
-
-import rasterio
-from rasterio.windows import Window
-from rasterio.warp import reproject
+from typing import Any, Union, Tuple, List, TYPE_CHECKING
 
 import PIL.Image
-from PIL.Image import Image
-
+import geopandas as gpd
+import h5py
 import matplotlib.pyplot as plt
+import numpy as np
+import rasterio
+import shapely
+import skimage
+from PIL.Image import Image
+from astropy.visualization import MinMaxInterval, AsymmetricPercentileInterval
+from matplotlib import colors
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from matplotlib.ticker import FuncFormatter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib import colors
+from rasterio.warp import reproject
+from rasterio.windows import Window
 
-from astropy.visualization import MinMaxInterval, AsymmetricPercentileInterval
-import h5py
-
-from .constants import *
-from .where import where
-from .wrap_geometry import wrap_geometry
 from .CRS import WGS84
+from .constants import *
+from .raster_geolocation import RasterGeolocation
 from .raster_geometry import RasterGeometry
 from .raster_grid import RasterGrid
-from .raster_geolocation import RasterGeolocation
+from .where import where
+from .wrap_geometry import wrap_geometry
 
 if TYPE_CHECKING:
     from .CRS import CRS
     from .bbox import BBox
-    from .spatial_geometry import SpatialGeometry
-    from .coordinate_array import CoordinateArray
-    from .vector_geometry import VectorGeometry, SingleVectorGeometry, MultiVectorGeometry
+    from .vector_geometry import VectorGeometry, SingleVectorGeometry
     from .point import Point
-    from .multi_point import MultiPoint
     from .polygon import Polygon
-    from .multi_polygon import MultiPolygon
     from .kdtree import KDTree
-    # from .raster_geometry import RasterGeometry
-    # from .raster_geolocation import RasterGeolocation
-    # from .raster_grid import RasterGrid
-    # from .raster import Raster
     from .multi_raster import MultiRaster
 
 class Raster:
@@ -633,7 +613,7 @@ class Raster:
     def __getitem__(self, key):
         if isinstance(key, (slice, int, tuple)):
             return self._key(key)
-        elif isinstance(key, string_types):
+        elif isinstance(key, str):
             return self.metadata[key]
         elif isinstance(key, (Raster, np.ndarray)):
             result = self.array[key]
@@ -644,7 +624,7 @@ class Raster:
     def __setitem__(self, key, value):
         if isinstance(key, slice):
             self.array[slice] = value
-        elif isinstance(key, string_types):
+        elif isinstance(key, str):
             self.metadata[key] = value
         elif isinstance(key, (Raster, np.ndarray)):
             self.array[np.array(key)] = value
@@ -1079,6 +1059,8 @@ class Raster:
             destination = np.empty((grid.rows, grid.cols), destination_dtype)
         elif len(self.shape) == 3:
             destination = np.empty((self.shape[0], grid.rows, grid.cols), destination_dtype)
+        else:
+            raise ValueError(f"invalid raster dimensions: {self.shape}")
 
         if str(self.dtype) == "bool":
             source = source.astype(np.uint16)

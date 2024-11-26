@@ -1,6 +1,7 @@
 """
 This package manages the geographic information associated with data points in both swath and grid rasters.
 """
+# noinspection PyUnusedImports
 from .constants import *
 from .CRS import CRS, WGS84
 from .bbox import BBox

@@ -1,19 +1,14 @@
 from __future__ import annotations
 
-from typing import Union, Iterable, TYPE_CHECKING
+from typing import Union
 
-import shapely
 import geopandas as gpd
+import shapely
 from pyproj import Transformer
 
 from .CRS import CRS, WGS84
 from .spatial_geometry import SpatialGeometry
 
-from .wrap_geometry import wrap_geometry
-
-if TYPE_CHECKING:
-    from .point import Point
-    from .multi_point import MultiPoint
 
 class VectorGeometry(SpatialGeometry):
     """

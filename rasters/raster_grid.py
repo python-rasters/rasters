@@ -613,6 +613,7 @@ class RasterGrid(RasterGeometry):
             in shapes
         ]
 
+        # TODO check in on the `rasterio.features` reference
         image = Raster(
             rasterio.features.rasterize(
                 shapes=shapes,

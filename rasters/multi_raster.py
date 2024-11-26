@@ -1,21 +1,15 @@
 from __future__ import annotations
 
-from typing import Union, Tuple, List, Dict, TYPE_CHECKING
-
-import warnings
-
-import numpy as np
-import h5py
+from typing import Union, Tuple, List, TYPE_CHECKING
 
 import PIL.Image
-from PIL.Image import Image
-
+import h5py
 import matplotlib.pyplot as plt
+import numpy as np
+from PIL.Image import Image
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from matplotlib.ticker import FuncFormatter
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib import colors
 
 from .constants import *
 from .raster import Raster

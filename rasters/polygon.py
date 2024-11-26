@@ -6,7 +6,7 @@ import numpy as np
 import shapely
 
 from .CRS import CRS, WGS84
-from .vector_geometry import VectorGeometry, SingleVectorGeometry
+from .vector_geometry import SingleVectorGeometry
 
 if TYPE_CHECKING:
     from .bbox import BBox
