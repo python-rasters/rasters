@@ -1,33 +1,27 @@
 from __future__ import annotations
 
-from typing import Union, List, Tuple, Dict, TYPE_CHECKING
-from abc import abstractmethod
-
+import json
 import logging
 import warnings
-import json
+from abc import abstractmethod
+from typing import Union, List, Tuple, Dict, TYPE_CHECKING
 
-import numpy as np
-
-from pyproj import Transformer
-
-import shapely
-from shapely.ops import transform as shapely_transform
-from shapely.geometry.base import BaseGeometry
 import geopandas as gpd
+import numpy as np
+import shapely
+from pyproj import Transformer
 from scipy.ndimage import shift
+from shapely.geometry.base import BaseGeometry
+from shapely.ops import transform as shapely_transform
 
-from .constants import *
 from .CRS import WGS84
-from .wrap_geometry import wrap_geometry
 from .spatial_geometry import SpatialGeometry
+from .wrap_geometry import wrap_geometry
 
 if TYPE_CHECKING:
     from .CRS import CRS
     from .bbox import BBox
     from .spatial_geometry import SpatialGeometry
-    from .coordinate_array import CoordinateArray
-    from .vector_geometry import VectorGeometry, SingleVectorGeometry, MultiVectorGeometry
     from .point import Point
     from .multi_point import MultiPoint
     from .polygon import Polygon
@@ -35,7 +29,7 @@ if TYPE_CHECKING:
     from .kdtree import KDTree
     from .raster_geolocation import RasterGeolocation
     from .raster_grid import RasterGrid
-    from .raster import Raster
+
 
 class RasterGeometry(SpatialGeometry):
     """

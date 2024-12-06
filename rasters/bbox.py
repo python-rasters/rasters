@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import List, Union
 import warnings
+from typing import List, Union
 
 from .CRS import CRS, WGS84
-from .spatial_geometry import SpatialGeometry
 from .polygon import Polygon
+from .spatial_geometry import SpatialGeometry
+
 
 class BBox(SpatialGeometry):
     """

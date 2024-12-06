@@ -3,8 +3,6 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import Union, TYPE_CHECKING
 
-import numpy as np
-
 from .CRS import CRS, WGS84
 from .local_UTM_proj4_from_lat_lon import local_UTM_proj4_from_lat_lon
 

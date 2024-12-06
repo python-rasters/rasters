@@ -6,7 +6,8 @@ import shapely
 
 from .CRS import CRS, WGS84
 from .bbox import BBox
-from .vector_geometry import VectorGeometry, MultiVectorGeometry
+from .vector_geometry import MultiVectorGeometry
+
 
 class MultiPolygon(MultiVectorGeometry):
     """

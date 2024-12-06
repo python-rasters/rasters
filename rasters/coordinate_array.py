@@ -6,7 +6,6 @@ import numpy as np
 from pyproj import Transformer
 
 from .CRS import CRS, WGS84
-from .bbox import BBox
 from .point import Point
 from .spatial_geometry import SpatialGeometry
 

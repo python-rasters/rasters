@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Optional, Union
-
-import math
 import warnings
 from collections import OrderedDict
+from typing import Any, Optional, Union
 
 import pyproj
 
-import shapely.wkt
 
 class CRS(pyproj.CRS):
     """

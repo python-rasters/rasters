@@ -7,12 +7,11 @@ import shapely
 from shapely.geometry.base import CAP_STYLE, JOIN_STYLE
 
 from rasters.wrap_geometry import wrap_geometry
-
-from .constants import *
 from .CRS import CRS, WGS84
-from .vector_geometry import VectorGeometry, SingleVectorGeometry
-from .polygon import Polygon
 from .bbox import BBox
+from .polygon import Polygon
+from .vector_geometry import VectorGeometry, SingleVectorGeometry
+
 
 class Point(SingleVectorGeometry):
     """

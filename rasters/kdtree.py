@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-from typing import Union, Dict, TYPE_CHECKING
-
 import warnings
+from typing import Dict, TYPE_CHECKING
 
-import numpy as np
-
-from pyresample import SwathDefinition, AreaDefinition
-from pyresample.kd_tree import get_neighbour_info, get_sample_from_neighbour_info
 import msgpack
 import msgpack_numpy
+import numpy as np
+from pyresample import SwathDefinition, AreaDefinition
+from pyresample.kd_tree import get_neighbour_info, get_sample_from_neighbour_info
 
 if TYPE_CHECKING:
     from .raster_geometry import RasterGeometry

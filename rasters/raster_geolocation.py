@@ -3,28 +3,19 @@ from __future__ import annotations
 from typing import Union, Tuple, Dict, TYPE_CHECKING
 
 import numpy as np
-
 from scipy.ndimage import zoom
-from scipy.spatial import cKDTree 
+from scipy.spatial import cKDTree
 
 from .CRS import WGS84
-
 from .raster_geometry import RasterGeometry
 from .wrap_geometry import wrap_geometry
 
 if TYPE_CHECKING:
     from .CRS import CRS
-    from .bbox import BBox
-    from .spatial_geometry import SpatialGeometry
-    from .coordinate_array import CoordinateArray
-    from .vector_geometry import VectorGeometry, SingleVectorGeometry, MultiVectorGeometry
     from .point import Point
-    from .multi_point import MultiPoint
     from .polygon import Polygon
-    from .multi_polygon import MultiPolygon
-    from .kdtree import KDTree
     from .raster_grid import RasterGrid
-    from .raster import Raster
+
 
 class RasterGeolocation(RasterGeometry):
     """
