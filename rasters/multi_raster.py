@@ -73,6 +73,27 @@ class MultiRaster(Raster):
         self.cmap = cmap
         self._source_metadata = {}
 
+    def contain(self, array=None, geometry=None, nodata=None) -> Raster:
+        if array is None:
+            array = self.array
+
+        if geometry is None:
+            geometry = self.geometry
+
+        if np.size(array) == 1:
+            return array
+
+        if nodata is None:
+            nodata = self.nodata
+
+        return MultiRaster(
+            array,
+            nodata=nodata,
+            metadata=self.metadata,
+            cmap=self.cmap,
+            geometry=geometry
+        )
+        
     @classmethod
     def stack(cls, rasters: List[Raster], *args, **kwargs) -> MultiRaster:
         geometry = rasters[0].geometry
