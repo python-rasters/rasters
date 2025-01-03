@@ -532,25 +532,33 @@ class Raster:
         if nodata is None:
             nodata = self.nodata
 
-        # try:
-        if len(array.shape) == 2:
-            return Raster(
-                array,
-                nodata=nodata,
-                metadata=self.metadata,
-                cmap=self.cmap,
-                geometry=geometry
-            )
-        elif len(array.shape) == 3:
-            return MultiRaster(
-                array,
-                nodata=nodata,
-                metadata=self.metadata,
-                cmap=self.cmap,
-                geometry=geometry
-            )
-        else:
-            raise ValueError(f"invalid raster array with shape {array.shape}")
+        return Raster(
+            array,
+            nodata=nodata,
+            metadata=self.metadata,
+            cmap=self.cmap,
+            geometry=geometry
+        )
+
+        # # try:
+        # if len(array.shape) == 2:
+        #     return Raster(
+        #         array,
+        #         nodata=nodata,
+        #         metadata=self.metadata,
+        #         cmap=self.cmap,
+        #         geometry=geometry
+        #     )
+        # elif len(array.shape) == 3:
+        #     return MultiRaster(
+        #         array,
+        #         nodata=nodata,
+        #         metadata=self.metadata,
+        #         cmap=self.cmap,
+        #         geometry=geometry
+        #     )
+        # else:
+        #     raise ValueError(f"invalid raster array with shape {array.shape}")
         # except Exception as e:
         #     return array
 
