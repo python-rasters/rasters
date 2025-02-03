@@ -75,15 +75,6 @@ The `rasters` package is available as a [pip package on PyPi](https://pypi.org/p
 pip install rasters
 ```
 
-### macOS Installation
-
-If you run into issues with installing the [pykdtree](https://github.com/storpipfugl/pykdtree) dependency on macOS because of the OpenMP library, use [mamba](https://github.com/mamba-org/mamba) to install `pykdtree`:
-
-```
-mamba install pykdtree
-pip install rasters
-```
-
 ## Examples
 
 Import the `Raster` class from the `rasters` package.
