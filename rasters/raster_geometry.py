@@ -65,19 +65,19 @@ class RasterGeometry(SpatialGeometry):
 
         display_dict = {
             "dimensions": {
-                "rows": self.rows,
-                "cols": self.cols
+                "rows": int(self.rows),
+                "cols": int(self.cols)
             },
             "bbox": {
-                "xmin": x_min,
-                "ymin": y_min,
-                "xmax": x_max,
-                "ymax": y_max
+                "xmin": float(x_min),
+                "ymin": float(y_min),
+                "xmax": float(x_max),
+                "ymax": float(y_max)
             },
-            "crs": self.crs.__repr__(),
+            "crs": str(self.crs.__repr__()),
             "resolution": {
-                "cell_width": self.cell_width,
-                "cell_height": self.cell_height
+                "cell_width": float(self.cell_width),
+                "cell_height": float(self.cell_height)
             }
         }
 

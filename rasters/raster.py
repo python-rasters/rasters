@@ -33,6 +33,7 @@ from .raster_geometry import RasterGeometry
 from .raster_grid import RasterGrid
 from .where import where
 from .wrap_geometry import wrap_geometry
+from .kdtree import KDTree
 
 if TYPE_CHECKING:
     from .CRS import CRS
