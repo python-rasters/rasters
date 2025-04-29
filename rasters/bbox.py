@@ -4,6 +4,7 @@ import warnings
 from typing import List, Union
 
 from .CRS import CRS, WGS84
+from .point import Point
 from .polygon import Polygon
 from .spatial_geometry import SpatialGeometry
 
@@ -209,6 +210,20 @@ class BBox(SpatialGeometry):
             ymin=self.y_min - buffer,
             xmax=self.x_max + buffer,
             ymax=self.y_max + buffer,
+            crs=self.crs
+        )
+
+    @property
+    def centroid(self) -> Point:
+        """
+        Calculates the centroid of the BBox.
+
+        Returns:
+            Point: The centroid of the BBox.
+        """
+        return Point(
+            x=(self.x_min + self.x_max) / 2,
+            y=(self.y_min + self.y_max) / 2,
             crs=self.crs
         )
 
