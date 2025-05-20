@@ -1325,8 +1325,12 @@ class Raster:
         if exists(filename) and not overwrite:
             raise IOError(f"output file already exists: {filename}")
 
-        with rasterio.open(filename, "w", **profile) as file:
-            file.write(output_array, 1)
+        if len(self.shape) == 2:
+            with rasterio.open(filename, "w", **profile) as file:
+                file.write(output_array, 1)
+        else:
+            with rasterio.open(filename, "w", **profile) as file:
+                file.write(output_array)
 
     def to_geotiff(
             self,
