@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+import warnings
 from typing import Iterator, Union, TYPE_CHECKING
 
 import numpy as np
@@ -42,7 +42,9 @@ def mosaic(images: Iterator[Union[Raster, str]], geometry: RasterGeometry) -> Ra
         metadata = image.metadata
         
         # Overlay the image onto the mosaic using the 'where' function
-        mosaic = where(np.isnan(mosaic), image.to_geometry(geometry), mosaic)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            mosaic = where(np.isnan(mosaic), image.to_geometry(geometry), mosaic)
 
     mosaic = mosaic.astype(dtype)  # Set the data type of the mosaic
     mosaic = Raster(mosaic, geometry=geometry, nodata=nodata, metadata=metadata)  # Create the final Raster
