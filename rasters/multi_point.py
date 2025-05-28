@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Union
 
+import numpy as np
 import shapely
 
 from .CRS import CRS, WGS84
@@ -39,3 +40,74 @@ class MultiPoint(MultiVectorGeometry):
         MultiVectorGeometry.__init__(self, crs=crs)
 
         self.geometry = geometry
+
+    @property
+    def x(self) -> np.ndarray:
+        """
+        Returns the x-coordinates of the points in the multi-point geometry.
+
+        Returns:
+            np.ndarray: An array of x-coordinates.
+        """
+        return np.array([point.x for point in self.geometry.geoms])
+    
+    @property
+    def y(self) -> np.ndarray:
+        """
+        Returns the y-coordinates of the points in the multi-point geometry.
+
+        Returns:
+            np.ndarray: An array of y-coordinates.
+        """
+        return np.array([point.y for point in self.geometry.geoms])
+    
+    @property
+    def xmin(self) -> float:
+        """
+        Returns the minimum x-coordinate of the points in the multi-point geometry.
+
+        Returns:
+            float: The minimum x-coordinate.
+        """
+        return np.nanmin(self.x)
+    
+    @property
+    def ymin(self) -> float:
+        """
+        Returns the minimum y-coordinate of the points in the multi-point geometry.
+
+        Returns:
+            float: The minimum y-coordinate.
+        """
+        return np.nanmin(self.y)
+    
+    @property
+    def xmax(self) -> float:
+        """
+        Returns the maximum x-coordinate of the points in the multi-point geometry.
+
+        Returns:
+            float: The maximum x-coordinate.
+        """
+        return np.nanmax(self.x)
+    
+    @property
+    def ymax(self) -> float:
+        """
+        Returns the maximum y-coordinate of the points in the multi-point geometry.
+
+        Returns:
+            float: The maximum y-coordinate.
+        """
+        return np.nanmax(self.y)
+    
+    @property
+    def bbox(self) -> "BBox":
+        """
+        Returns the bounding box of the multi-point geometry.
+
+        Returns:
+            BBox: The bounding box of the multi-point geometry.
+        """
+        from .bbox import BBox
+        return BBox(self.xmin, self.ymin, self.xmax, self.ymax, crs=self.crs)
