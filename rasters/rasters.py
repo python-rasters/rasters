@@ -26,5 +26,6 @@ from .center_aeqd import center_aeqd
 from .local_UTM_proj4 import local_UTM_proj4
 from .linear_downscale import linear_downscale
 from .bias_correct import bias_correct
+from .mosaic import mosaic
 
 __author__ = "Gregory Halverson"

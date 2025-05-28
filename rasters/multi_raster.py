@@ -19,6 +19,8 @@ if TYPE_CHECKING:
     from .raster import Raster
 
 class MultiRaster(Raster):
+    multi = True
+
     def __init__(
             self,
             array: Union[np.ndarray, Raster],
