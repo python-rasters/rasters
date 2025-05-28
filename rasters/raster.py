@@ -47,6 +47,8 @@ if TYPE_CHECKING:
 class Raster:
     DEFAULT_GEOTIFF_COMPRESSION = "deflate"
 
+    multi = False
+
     logger = logging.getLogger(__name__)
 
     def __init__(
@@ -435,14 +437,17 @@ class Raster:
             raise ValueError("invalid window")
 
         with rasterio.open(filename, "r", **kwargs) as file:
-            if file.count != 1:
+            if file.count != 1 and not cls.multi:
                 raise IOError(f"raster file with {file.count} bands is not single-band: {filename}")
 
             if nodata is None:
                 nodata = file.nodata
 
             if window is None:
-                data = file.read(1)
+                if cls.multi:
+                    data = file.read()
+                else:
+                    data = file.read(1)
                 geometry = source_geometry
             else:
                 data = file.read(1, window=window)
@@ -461,7 +466,7 @@ class Raster:
                     crs=CRS
                 )
 
-        result = Raster(data, geometry, nodata=nodata, filename=filename, cmap=cmap, **kwargs)
+        result = cls(data, geometry, nodata=nodata, filename=filename, cmap=cmap, **kwargs)
 
         if isinstance(target_geometry, RasterGeometry):
             result = result.to_geometry(target_geometry, resampling=resampling)
@@ -1325,8 +1330,12 @@ class Raster:
         if exists(filename) and not overwrite:
             raise IOError(f"output file already exists: {filename}")
 
-        with rasterio.open(filename, "w", **profile) as file:
-            file.write(output_array, 1)
+        if len(self.shape) == 2:
+            with rasterio.open(filename, "w", **profile) as file:
+                file.write(output_array, 1)
+        else:
+            with rasterio.open(filename, "w", **profile) as file:
+                file.write(output_array)
 
     def to_geotiff(
             self,
