@@ -8,7 +8,10 @@ if TYPE_CHECKING:
     from .raster import Raster
     from .raster_geometry import RasterGeometry
 
-def mosaic(images: Iterator[Union[Raster, str]], geometry: RasterGeometry) -> Raster:
+def mosaic(
+        images: Iterator[Union[Raster, str]], 
+        geometry: RasterGeometry,
+        resampling: str = "nearest") -> Raster:
     """
     Creates a mosaic from a sequence of Raster images.
 
@@ -44,7 +47,7 @@ def mosaic(images: Iterator[Union[Raster, str]], geometry: RasterGeometry) -> Ra
         # Overlay the image onto the mosaic using the 'where' function
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            mosaic = where(np.isnan(mosaic), image.to_geometry(geometry), mosaic)
+            mosaic = where(np.isnan(mosaic), image.to_geometry(geometry, resampling=resampling), mosaic)
 
     mosaic = mosaic.astype(dtype)  # Set the data type of the mosaic
     mosaic = Raster(mosaic, geometry=geometry, nodata=nodata, metadata=metadata)  # Create the final Raster

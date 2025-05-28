@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     from .bbox import BBox
     from .vector_geometry import VectorGeometry, SingleVectorGeometry
     from .point import Point
+    from .multi_point import MultiPoint
     from .polygon import Polygon
     from .kdtree import KDTree
     from .multi_raster import MultiRaster
@@ -409,13 +410,39 @@ class Raster:
             filename: str,
             nodata=None,
             remove=None,
-            geometry: Union[RasterGeometry, Point] = None,
+            geometry: Union[RasterGeometry, Point, MultiPoint] = None,
             buffer: int = None,
             window: Window = None,
             resampling: str = None,
             cmap: Union[Colormap, str] = None,
-            **kwargs) -> Raster:
+            **kwargs) -> Union[Raster, np.ndarray]:
         from .point import Point
+        from .multi_point import MultiPoint
+
+        if isinstance(geometry, MultiPoint):
+            values = []
+
+            for point in geometry:
+                value = cls.open(
+                    filename=filename,
+                    nodata=nodata,
+                    remove=remove,
+                    geometry=point,
+                    buffer=buffer,
+                    window=window,
+                    resampling=resampling,
+                    cmap=cmap,
+                    **kwargs
+                )
+
+                if isinstance(value, Raster):
+                    value = value.to_point(point)
+
+                values.append(value)
+
+            values = np.ndarray(values)
+
+            return values
 
         target_geometry = geometry
 

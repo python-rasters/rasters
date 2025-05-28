@@ -9,7 +9,6 @@ from pyproj import Transformer
 from .CRS import CRS, WGS84
 from .spatial_geometry import SpatialGeometry
 
-
 class VectorGeometry(SpatialGeometry):
     """
     Base class for representing vector geometries.
@@ -160,6 +159,13 @@ class MultiVectorGeometry(VectorGeometry):
             return self.geoms[index]
         
         return self.geometry[index]
+
+    # need to be able to iterate over geometries and apply self.contain to each one
+    def __iter__(self):
+        from .wrap_geometry import wrap_geometry
+
+        for geometry in self.geoms:
+            yield wrap_geometry(geometry)    
 
     # @property
     # def geoms(self) -> list[VectorGeometry]:
