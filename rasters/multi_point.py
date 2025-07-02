@@ -1,18 +1,24 @@
 from __future__ import annotations
 
-from typing import Union, Optional
+from typing import Union, Optional, TYPE_CHECKING
 import numpy as np
 import shapely
+from pyproj import Transformer
 
 from .CRS import CRS, WGS84
 from .vector_geometry import MultiVectorGeometry
+from .point import Point # Assuming you have a Point class
+
+if TYPE_CHECKING:
+    from .bbox import BBox
 
 class MultiPoint(MultiVectorGeometry):
     """
     A class representing a collection of points with a coordinate reference system (CRS).
 
     This class extends the MultiVectorGeometry class and uses shapely to represent
-    the multi-point geometry.
+    the multi-point geometry. It also incorporates functionality to manage
+    coordinate arrays and perform CRS transformations.
 
     Attributes:
         geometry (shapely.geometry.MultiPoint): The shapely geometry representing the multi-point.
@@ -58,7 +64,14 @@ class MultiPoint(MultiVectorGeometry):
                 crs = points.crs
             else:
                 # Otherwise, create a new shapely MultiPoint from the coordinates
-                geometry = shapely.geometry.MultiPoint(points)
+                # Ensure input points are in a format shapely can handle (e.g., list of tuples/lists)
+                if isinstance(points, np.ndarray):
+                    # If it's a NumPy array, it's likely (N, 2) or (N, 3)
+                    geometry = shapely.geometry.MultiPoint(points)
+                else:
+                    # Assume it's an iterable of point-like structures
+                    geometry = shapely.geometry.MultiPoint(points)
+
         elif x is not None and y is not None:
             if len(x) != len(y):
                 raise ValueError("Length of 'x' array must match length of 'y' array.")
@@ -81,6 +94,9 @@ class MultiPoint(MultiVectorGeometry):
         Returns:
             np.ndarray: An array of x-coordinates.
         """
+        # Ensure coordinates are extracted correctly, especially for empty geometries
+        if self.geometry.is_empty:
+            return np.array([])
         return np.array([point.x for point in self.geometry.geoms])
     
     @property
@@ -91,8 +107,27 @@ class MultiPoint(MultiVectorGeometry):
         Returns:
             np.ndarray: An array of y-coordinates.
         """
+        if self.geometry.is_empty:
+            return np.array([])
         return np.array([point.y for point in self.geometry.geoms])
     
+    @property
+    def z(self) -> np.ndarray:
+        """
+        Returns the z-coordinates of the points in the multi-point geometry.
+
+        Returns:
+            np.ndarray: An array of z-coordinates. Returns empty array if no z-coords.
+        """
+        if self.geometry.is_empty:
+            return np.array([])
+        # Shapely's .coords returns a sequence of (x, y, z) or (x, y) tuples
+        # We need to explicitly check if z exists for each point or rely on overall dimension
+        coords = np.array(self.geometry.coords)
+        if coords.shape[1] == 3:
+            return coords[:, 2]
+        return np.array([]) # Return empty if no Z dimension
+
     @property
     def xmin(self) -> float:
         """
@@ -101,10 +136,10 @@ class MultiPoint(MultiVectorGeometry):
         Returns:
             float: The minimum x-coordinate.
         """
-        # Handle empty geometry case
+        # Use geometry.bounds for efficiency if possible, or handle empty explicitly
         if self.geometry.is_empty:
             return np.nan
-        return np.nanmin(self.x)
+        return self.geometry.bounds[0] # xmin
     
     @property
     def ymin(self) -> float:
@@ -114,10 +149,9 @@ class MultiPoint(MultiVectorGeometry):
         Returns:
             float: The minimum y-coordinate.
         """
-        # Handle empty geometry case
         if self.geometry.is_empty:
             return np.nan
-        return np.nanmin(self.y)
+        return self.geometry.bounds[1] # ymin
     
     @property
     def xmax(self) -> float:
@@ -127,10 +161,9 @@ class MultiPoint(MultiVectorGeometry):
         Returns:
             float: The maximum x-coordinate.
         """
-        # Handle empty geometry case
         if self.geometry.is_empty:
             return np.nan
-        return np.nanmax(self.x)
+        return self.geometry.bounds[2] # xmax
     
     @property
     def ymax(self) -> float:
@@ -140,13 +173,12 @@ class MultiPoint(MultiVectorGeometry):
         Returns:
             float: The maximum y-coordinate.
         """
-        # Handle empty geometry case
         if self.geometry.is_empty:
             return np.nan
-        return np.nanmax(self.y)
+        return self.geometry.bounds[3] # ymax
     
     @property
-    def bbox(self) -> "BBox":
+    def bbox(self) -> BBox:
         """
         Returns the bounding box of the multi-point geometry.
 
@@ -158,3 +190,94 @@ class MultiPoint(MultiVectorGeometry):
         if self.geometry.is_empty:
             return BBox(crs=self.crs)
         return BBox(self.xmin, self.ymin, self.xmax, self.ymax, crs=self.crs)
+
+    def centroid(self) -> Point:
+        """
+        Calculates the centroid of the multi-point geometry.
+        For a MultiPoint, this is typically the mean of all constituent points' coordinates.
+
+        Returns:
+            Point: The centroid of the multi-point.
+        """
+        if self.geometry.is_empty:
+            return Point(np.nan, np.nan, crs=self.crs) # Centroid of empty set is undefined
+
+        # Shapely's .centroid for MultiPoint would be the centroid of its convex hull sometimes
+        # or the average of all points. Here, we emulate CoordinateArray's mean
+        # to ensure consistency with what it offered.
+        # This is equivalent to shapely.geometry.MultiPoint.centroid.x/y for a simple average
+        # for Points.
+        return Point(self.geometry.centroid.x, self.geometry.centroid.y, crs=self.crs)
+    
+    def to_crs(self, crs: Union[CRS, str]) -> "MultiPoint":
+        """
+        Transforms the multi-point to a new CRS.
+
+        Args:
+            crs (CRS | str): The target CRS.
+
+        Returns:
+            MultiPoint: A new MultiPoint with the transformed coordinates.
+        """
+        if isinstance(crs, str):
+            crs = CRS(crs)
+
+        if self.crs.equals(crs):
+            return self # No transformation needed
+
+        # Handle empty geometry gracefully
+        if self.geometry.is_empty:
+            return MultiPoint(crs=crs)
+
+        # Extract coordinates from shapely geometry
+        # .coords returns a sequence of (x, y) or (x, y, z) tuples
+        coords_array = np.array(self.geometry.coords)
+
+        # Assuming your CRS class has a method to_pyproj() that returns a pyproj.CRS object
+        transformer = Transformer.from_crs(self.crs.to_pyproj(), crs.to_pyproj(), always_xy=True)
+
+        if coords_array.shape[1] == 3: # If Z coordinates exist
+            x_transformed, y_transformed, z_transformed = transformer.transform(
+                coords_array[:, 0], coords_array[:, 1], coords_array[:, 2]
+            )
+            transformed_coords = np.column_stack((x_transformed, y_transformed, z_transformed))
+        else: # 2D coordinates
+            x_transformed, y_transformed = transformer.transform(
+                coords_array[:, 0], coords_array[:, 1]
+            )
+            transformed_coords = np.column_stack((x_transformed, y_transformed))
+
+        # Create a new MultiPoint from transformed coordinates
+        return MultiPoint(transformed_coords, crs=crs)
+    
+    @property
+    def latlon(self) -> "MultiPoint": # Changed return type to MultiPoint
+        """
+        Returns the multi-point in the WGS84 (latitude/longitude) CRS.
+
+        Returns:
+            MultiPoint: The multi-point in WGS84.
+        """
+        return self.to_crs(WGS84)
+
+    @property
+    def lat(self) -> np.ndarray:
+        """
+        Returns the latitudes of the points in the WGS84 CRS.
+
+        Returns:
+            np.ndarray: The array of latitudes.
+        """
+        # Perform on-the-fly transformation to WGS84 and extract Y (latitude)
+        return self.latlon.y
+
+    @property
+    def lon(self) -> np.ndarray:
+        """
+        Returns the longitudes of the points in the WGS84 CRS.
+
+        Returns:
+            np.ndarray: The array of longitudes.
+        """
+        # Perform on-the-fly transformation to WGS84 and extract X (longitude)
+        return self.latlon.x
