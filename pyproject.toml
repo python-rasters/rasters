@@ -52,3 +52,8 @@ rasters = ["*.txt"]
 
 [project.urls]
 "Homepage" = "https://github.com/python-rasters/rasters"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:The 'shapely.geos' module is deprecated:DeprecationWarning:geopandas._compat",
+]
