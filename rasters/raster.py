@@ -28,6 +28,7 @@ from rasterio.windows import Window
 
 from .CRS import WGS84
 from .constants import *
+from .out_of_bounds_error import OutOfBoundsError
 from .raster_geolocation import RasterGeolocation
 from .raster_geometry import RasterGeometry
 from .raster_grid import RasterGrid
@@ -418,29 +419,48 @@ class Raster:
             **kwargs) -> Union[Raster, np.ndarray]:
         from .point import Point
         from .multi_point import MultiPoint
+        from .raster_grid import RasterGrid
 
         if isinstance(geometry, MultiPoint):
+            # First, we need to get the source raster's CRS to transform points if needed
+            source_geometry = RasterGrid.open(filename)
+            
             values = []
 
-            for point in geometry:
-                value = cls.open(
-                    filename=filename,
-                    nodata=nodata,
-                    remove=remove,
-                    geometry=point,
-                    buffer=buffer,
-                    window=window,
-                    resampling=resampling,
-                    cmap=cmap,
-                    **kwargs
-                )
+            for i, point in enumerate(geometry):
+                # Transform point to match raster's CRS if they differ
+                transformed_point = point
+                if point.crs != source_geometry.crs:
+                    transformed_point = point.to_crs(source_geometry.crs)
+                
+                try:
+                    value = cls.open(
+                        filename=filename,
+                        nodata=nodata,
+                        remove=remove,
+                        geometry=transformed_point,
+                        buffer=buffer,
+                        window=window,
+                        resampling=resampling,
+                        cmap=cmap,
+                        **kwargs
+                    )
 
-                if isinstance(value, Raster):
-                    value = value.to_point(point)
+                    if isinstance(value, Raster):
+                        # Use the original point (in original CRS) for the to_point conversion
+                        value = value.to_point(point)
 
-                values.append(value)
+                    values.append(value)
+                
+                except OutOfBoundsError:
+                    # Point is outside raster bounds, append NaN
+                    values.append(np.nan)
+                
+                except Exception as e:
+                    # For other exceptions, re-raise with more context about which point failed
+                    raise type(e)(f"Point {i} at {point} (transformed to {transformed_point}) failed: {str(e)}") from e
 
-            values = np.ndarray(values)
+            values = np.array(values)
 
             return values
 
