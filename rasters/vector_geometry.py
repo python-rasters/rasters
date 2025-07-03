@@ -165,7 +165,7 @@ class MultiVectorGeometry(VectorGeometry):
         from .wrap_geometry import wrap_geometry
 
         for geometry in self.geoms:
-            yield wrap_geometry(geometry)    
+            yield wrap_geometry(geometry, crs=self.crs)    
 
     # @property
     # def geoms(self) -> list[VectorGeometry]:

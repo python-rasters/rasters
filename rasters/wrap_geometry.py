@@ -41,7 +41,8 @@ def wrap_geometry(geometry: Any, crs: Union[CRS, str] = None) -> SpatialGeometry
     from .polygon import Polygon
     from .multi_polygon import MultiPolygon
 
-    if isinstance(geometry, SpatialGeometry):
+    # Check if the geometry is already a SpatialGeometry by checking for specific types
+    if isinstance(geometry, (Point, MultiPoint, Polygon, MultiPolygon)):
         # If the geometry is already a SpatialGeometry, return it as is
         return geometry
 
