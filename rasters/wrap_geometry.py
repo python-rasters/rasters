@@ -40,6 +40,11 @@ def wrap_geometry(geometry: Any, crs: Union[CRS, str] = None) -> SpatialGeometry
     from .multi_point import MultiPoint
     from .polygon import Polygon
     from .multi_polygon import MultiPolygon
+    from .raster_geometry import RasterGeometry
+
+    if isinstance(geometry, RasterGeometry):
+        # If the geometry is a RasterGeometry, return it as is
+        return geometry
 
     # Check if the geometry is already a SpatialGeometry by checking for specific types
     if isinstance(geometry, (Point, MultiPoint, Polygon, MultiPolygon)):
