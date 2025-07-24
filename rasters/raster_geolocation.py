@@ -5,6 +5,7 @@ from typing import Union, Tuple, Dict, TYPE_CHECKING
 import numpy as np
 from scipy.ndimage import zoom
 from scipy.spatial import cKDTree
+from rasterio.windows import Window
 
 from .CRS import WGS84
 from .raster_geometry import RasterGeometry
@@ -338,3 +339,22 @@ class RasterGeolocation(RasterGeometry):
             output_dict['longitude'] = lon
 
         return output_dict
+
+    def window(self, geometry) -> Window:
+        """
+        Returns a rasterio.windows.Window covering the target geometry.
+        Equivalent to RasterGrid.window, but for geolocation arrays.
+        """
+        
+        mask = self.index(geometry)
+        rows, cols = np.where(mask)
+
+        if rows.size == 0 or cols.size == 0:
+            raise ValueError("No points found within the target geometry.")
+
+        row_off = int(rows.min())
+        col_off = int(cols.min())
+        height = int(rows.max() - rows.min() + 1)
+        width = int(cols.max() - cols.min() + 1)
+
+        return Window(col_off=col_off, row_off=row_off, width=width, height=height)
