@@ -127,7 +127,7 @@ class Raster:
 
         return array
 
-    def __array_wrap__(self, other: Union[np.ndarray, Raster], **kwargs) -> Raster:
+    def __array_wrap__(self, other: Union[np.ndarray, 'Raster'], context=None, return_scalar=None, **kwargs) -> 'Raster':
         if isinstance(other, Raster):
             other = other.array
         elif isinstance(other, np.ndarray):

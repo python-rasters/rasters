@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rasters"
-version = "1.8.0"
+version = "1.9.0"
 description = "raster processing toolkit"
 readme = "README.md"
 authors = [
@@ -47,8 +47,8 @@ dev = [
     "twine"
 ]
 
-[tool.setuptools.package-data]
-rasters = ["*.txt"]
+[tool.setuptools.packages.find]
+exclude = ["notebooks*", "examples*"]
 
 [project.urls]
 "Homepage" = "https://github.com/python-rasters/rasters"
