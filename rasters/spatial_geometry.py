@@ -4,7 +4,6 @@ from abc import abstractmethod
 from typing import Union, TYPE_CHECKING
 
 from .CRS import CRS, WGS84
-from .local_UTM_proj4_from_lat_lon import local_UTM_proj4_from_lat_lon
 
 if TYPE_CHECKING:
     from .bbox import BBox
@@ -119,28 +118,6 @@ class SpatialGeometry:
 
     @property
     def local_UTM_proj4(self) -> str:
-        """
-        Gets the proj4 string for the local UTM zone of the geometry.
-
-        The local UTM zone is determined by the centroid of the geometry in the
-        WGS84 coordinate reference system (CRS).
-
-        Returns:
-            str: The proj4 string for the local UTM zone of the geometry.
-        """
-
+        from .local_UTM_proj4 import local_UTM_proj4
         centroid = self.centroid.latlon
-        lat = centroid.y
-        lon = centroid.x
-
-        # Calculate the UTM zone using the centroid's longitude.
-        # UTM_zone = (np.floor((lon + 180) / 6) % 60) + 1
-
-        # Construct the proj4 string using the calculated UTM zone and the
-        # centroid's latitude to determine the hemisphere.
-        # UTM_proj4 = f"+proj=utm +zone={UTM_zone} {'+south ' if lat < 0 else ''}+ellps=WGS84 +datum=WGS84 +units=m +no_defs"
-
-        # Use the helper function to get the local UTM proj4 string
-        UTM_proj4 = local_UTM_proj4_from_lat_lon(lat, lon)
-
-        return UTM_proj4
+        return local_UTM_proj4(centroid)

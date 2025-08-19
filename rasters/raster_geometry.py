@@ -13,6 +13,7 @@ from pyproj import Transformer
 from scipy.ndimage import shift
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import transform as shapely_transform
+from .local_UTM_proj4 import local_UTM_proj4
 
 from .CRS import WGS84
 from .spatial_geometry import SpatialGeometry
@@ -231,13 +232,15 @@ class RasterGeometry(SpatialGeometry):
 
     @property
     def local_UTM_proj4(self) -> str:
-        centroid = self.centroid.latlon
-        lat = centroid.y
-        lon = centroid.x
-        UTM_zone = (np.floor((lon + 180) / 6) % 60) + 1
-        UTM_proj4 = f"+proj=utm +zone={UTM_zone} {'+south ' if lat < 0 else ''}+ellps=WGS84 +datum=WGS84 +units=m +no_defs"
-
-        return UTM_proj4
+        import warnings
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message="You will likely lose important projection information when converting to a PROJ string from another format.",
+                category=UserWarning,
+                module="pyproj"
+            )
+            return local_UTM_proj4(self.centroid.latlon).to_proj4()
 
     @property
     def is_point(self) -> bool:
