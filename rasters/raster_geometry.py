@@ -590,9 +590,10 @@ class RasterGeometry(SpatialGeometry):
 
         return RasterGeolocation(x=self.x, y=self.y, crs=self.crs)
 
-    def to_crs(self, crs: Union[CRS, str] = WGS84) -> RasterGeolocation:
+    def to_crs(self, crs: Union[CRS, str] = WGS84) -> 'RasterGeolocation':
         from .CRS import CRS
         from .raster_geolocation import RasterGeolocation
+        from .transform_xy import transform_xy
 
         # validate destination CRS
         if not isinstance(crs, CRS):
@@ -601,15 +602,7 @@ class RasterGeometry(SpatialGeometry):
         if self.crs == crs:
             return self
 
-        if self.is_geographic:
-            x, y = shapely_transform(self.crs, crs, self.y, self.x)
-        else:
-            x, y = shapely_transform(self.crs, crs, self.x, self.y)
-
-        if crs.is_geographic:
-            x = np.where(np.logical_or(x < -180, x > 180), np.nan, x)
-            y = np.where(np.logical_or(y < -90, y > 90), np.nan, y)
-
+        x, y = transform_xy(x=self.x, y=self.y, source_crs=self.crs, target_crs=crs)
         geolocation = RasterGeolocation(x=x, y=y, crs=crs)
 
         return geolocation
