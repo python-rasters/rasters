@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Union, TYPE_CHECKING
 
 import shapely
+from geopandas import GeoSeries
 
 from .CRS import CRS
 from .spatial_geometry import SpatialGeometry
