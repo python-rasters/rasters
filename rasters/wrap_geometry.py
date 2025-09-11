@@ -43,6 +43,9 @@ def wrap_geometry(geometry: Any, crs: Union[CRS, str] = None) -> SpatialGeometry
     from .multi_polygon import MultiPolygon
     from .raster_geometry import RasterGeometry
 
+    if geometry is None:
+        return None
+
     if isinstance(geometry, RasterGeometry):
         # If the geometry is a RasterGeometry, return it as is
         return geometry
