@@ -51,6 +51,9 @@ def wrap_geometry(geometry: Any, crs: Union[CRS, str] = None) -> SpatialGeometry
         # If the geometry is already a SpatialGeometry, return it as is
         return geometry
 
+    if isinstance(geometry, GeoSeries) and all(geometry.geom_type == 'Point'):
+        return MultiPoint(geometry)
+
     if crs is None:
         # Default to WGS84 if no CRS is provided
         crs = WGS84
