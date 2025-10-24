@@ -26,6 +26,10 @@ class CRS(pyproj.CRS):
             projparams (Any): Projection parameters used to initialize the CRS object.
             **kwargs: Additional keyword arguments passed to the pyproj.CRS constructor.
         """
+        # Handle None, empty string, or other invalid projparams by defaulting to WGS84
+        if projparams is None or projparams == '' or (isinstance(projparams, str) and projparams.strip() == ''):
+            projparams = "EPSG:4326"
+            
         super(CRS, self).__init__(projparams=projparams, **kwargs)
         self._proj4_string = None  # Cache for proj4 string
 
