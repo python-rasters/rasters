@@ -149,6 +149,32 @@ class Point(SingleVectorGeometry):
         """
         return self.geometry.y
 
+    @property
+    def lat(self) -> float:
+        """
+        Get the latitude of the point.
+        
+        Latitude is the y-coordinate in a geographic coordinate system (like WGS84),
+        representing the north-south position on the Earth's surface in decimal degrees.
+
+        Returns:
+            float: The latitude value.
+        """
+        return self.latlon.y
+    
+    @property
+    def lon(self) -> float:
+        """
+        Get the longitude of the point.
+        
+        Longitude is the x-coordinate in a geographic coordinate system (like WGS84),
+        representing the east-west position on the Earth's surface in decimal degrees.
+
+        Returns:
+            float: The longitude value.
+        """
+        return self.latlon.x
+
     def buffer(
             self,
             distance,
