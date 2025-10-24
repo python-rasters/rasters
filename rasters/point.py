@@ -160,7 +160,10 @@ class Point(SingleVectorGeometry):
         Returns:
             float: The latitude value.
         """
-        return self.latlon.y
+        if self.is_geographic:
+            return self.y
+        else:
+            return self.latlon.y
     
     @property
     def lon(self) -> float:
@@ -173,7 +176,10 @@ class Point(SingleVectorGeometry):
         Returns:
             float: The longitude value.
         """
-        return self.latlon.x
+        if self.is_geographic:
+            return self.x
+        else:
+            return self.latlon.x
 
     def buffer(
             self,
