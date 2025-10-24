@@ -302,6 +302,22 @@ class RasterGrid(RasterGeometry):
         return self._cols
 
     @property
+    def xmin(self) -> float:
+        return self.x_origin
+    
+    @property
+    def xmax(self) -> float:
+        return self.x_origin + self.width
+    
+    @property
+    def ymin(self) -> float:
+        return self.y_origin - self.height
+
+    @property
+    def ymax(self) -> float:
+        return self.y_origin
+
+    @property
     def grid(self) -> RasterGrid:
         return RasterGrid.from_affine(self.affine, self.rows, self.cols, self.crs)
 
