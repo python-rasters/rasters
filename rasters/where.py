@@ -6,6 +6,7 @@ import numpy as np
 
 if TYPE_CHECKING:
     from .raster import Raster
+    from .multi_raster import MultiRaster
 
 def where(condition, x, y):
     """
@@ -48,6 +49,7 @@ def where(condition, x, y):
             [10, 11, 12, 13, 14]])
     """
     from .raster import Raster
+    from .multi_raster import MultiRaster
 
     # Determine the geometry of the output Raster (if any)
     geometry = None
@@ -89,5 +91,7 @@ def where(condition, x, y):
     # Return the result as a Raster if any of the inputs were Rasters
     if geometry is None:
         return result
-    else:
+    elif len(result.shape) == 2:
         return Raster(result, geometry=geometry, cmap=cmap, metadata=metadata, nodata=nodata)
+    elif len(result.shape) == 3:
+        return MultiRaster(result, geometry=geometry, cmap=cmap, metadata=metadata, nodata=nodata)
