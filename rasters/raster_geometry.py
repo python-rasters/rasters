@@ -10,6 +10,7 @@ import geopandas as gpd
 import numpy as np
 import shapely
 from pyproj import Transformer
+from rasterio.windows import Window
 from scipy.ndimage import shift
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import transform as shapely_transform
@@ -91,10 +92,16 @@ class RasterGeometry(SpatialGeometry):
     def __eq__(self, other: RasterGeometry) -> bool:
         pass
 
-    def __getitem__(self, key: Union[slice, int, tuple]):
-        if isinstance(key, (slice, int, tuple)):
+    def __getitem__(self, key):
+        from .point import Point
+        from .polygon import Polygon
+        from .bbox import BBox
+        
+        # Check if key is a type accepted by subset method
+        if isinstance(key, (Window, Point, Polygon, BBox, RasterGeometry)):
+            return self.subset(key)
+        elif isinstance(key, (slice, int, tuple)):
             return self._key(key)
-
         else:
             raise KeyError('unrecognized key')
 
@@ -269,6 +276,36 @@ class RasterGeometry(SpatialGeometry):
 
     @abstractmethod
     def index(self, geometry: Union[RasterGeometry, Point, Polygon, Tuple[float, float, float, float]]):
+        pass
+
+    @abstractmethod
+    def window(
+            self,
+            geometry: Union[SpatialGeometry, Tuple[float, float, float, float]],
+            buffer: int = None) -> Window:
+        """
+        Returns a rasterio.windows.Window covering the target geometry.
+        
+        Args:
+            geometry: The geometry to create a window for
+            buffer: Optional buffer in pixels to add around the geometry
+            
+        Returns:
+            Window: A rasterio Window object covering the geometry
+        """
+        pass
+
+    @abstractmethod
+    def subset(self, target: Union[Window, Point, Polygon, BBox, RasterGeometry]) -> RasterGeometry:
+        """
+        Subset the raster geometry using a Window or other geometry.
+        
+        Args:
+            target: Window object or geometry to subset with
+            
+        Returns:
+            RasterGeometry: A new raster geometry object representing the subset
+        """
         pass
 
     @property

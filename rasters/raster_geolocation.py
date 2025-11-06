@@ -13,9 +13,11 @@ from .wrap_geometry import wrap_geometry
 
 if TYPE_CHECKING:
     from .CRS import CRS
+    from .bbox import BBox
     from .point import Point
     from .polygon import Polygon
     from .raster_grid import RasterGrid
+    from .spatial_geometry import SpatialGeometry
 
 
 class RasterGeolocation(RasterGeometry):
@@ -340,10 +342,19 @@ class RasterGeolocation(RasterGeometry):
 
         return output_dict
 
-    def window(self, geometry) -> Window:
+    def window(
+            self,
+            geometry: Union[SpatialGeometry, Tuple[float, float, float, float]],
+            buffer: int = None) -> Window:
         """
         Returns a rasterio.windows.Window covering the target geometry.
-        Equivalent to RasterGrid.window, but for geolocation arrays.
+        
+        Args:
+            geometry: The geometry to create a window for
+            buffer: Optional buffer in pixels to add around the geometry
+            
+        Returns:
+            Window: A rasterio Window object covering the geometry
         """
         
         mask = self.index(geometry)
@@ -357,4 +368,29 @@ class RasterGeolocation(RasterGeometry):
         height = int(rows.max() - rows.min() + 1)
         width = int(cols.max() - cols.min() + 1)
 
+        # Apply buffer if specified
+        if buffer is not None and buffer > 0:
+            row_off = max(0, row_off - buffer)
+            col_off = max(0, col_off - buffer)
+            height = min(self.rows - row_off, height + 2 * buffer)
+            width = min(self.cols - col_off, width + 2 * buffer)
+
         return Window(col_off=col_off, row_off=row_off, width=width, height=height)
+
+    def subset(self, target: Union[Window, Point, Polygon, BBox, RasterGeometry]) -> 'RasterGeolocation':
+        """
+        Subset the raster geolocation using a Window or other geometry.
+        
+        Args:
+            target: Window object or geometry to subset with
+            
+        Returns:
+            RasterGeolocation: A new RasterGeolocation object representing the subset
+        """
+        if not isinstance(target, Window):
+            target = self.window(target)
+        
+        row_slice = slice(target.row_off, target.row_off + target.height)
+        col_slice = slice(target.col_off, target.col_off + target.width)
+        
+        return self._slice(row_slice, col_slice)
