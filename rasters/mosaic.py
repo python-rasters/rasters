@@ -36,9 +36,9 @@ def mosaic(
     if len(images) == 0:
         raise ValueError("No images provided for mosaicking.")
 
-    if len(images[0].shape == 2):
+    if len(images[0].shape) == 2:
         mosaic = Raster(np.full(geometry.shape, np.nan), geometry=geometry)
-    elif len(images[0].shape == 3):
+    elif len(images[0].shape) == 3:
         mosaic = MultiRaster(np.full(geometry.shape, np.nan), geometry=geometry)
     else:
         raise ValueError("Unsupported image shape for mosaicking.")
