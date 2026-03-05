@@ -1,3 +1,6 @@
+# Python version for environment creation
+PYTHON_VERSION ?= 3.14
+
 .PHONY: clean test build twine-upload dist environment install uninstall reinstall test
 
 clean:
@@ -23,7 +26,7 @@ dist:
 	make twine-upload
 
 environment:
-	mamba create -y -n rasters python=3.11 jupyter
+	mamba create -y -n rasters python=$(PYTHON_VERSION) jupyter
 
 remove-environment:
 	mamba env remove -y -n rasters
