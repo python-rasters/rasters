@@ -160,6 +160,16 @@ class BBox(SpatialGeometry):
         return self.transform(WGS84)
 
     @property
+    def boundary_latlon(self) -> Polygon:
+        """
+        Returns a Polygon representation of the BBox boundary in WGS84 coordinates.
+
+        Returns:
+            Polygon: The boundary polygon in WGS84 (latitude/longitude) CRS.
+        """
+        return self.polygon.to_crs(WGS84)
+
+    @property
     def round(self) -> BBox:
         """
         Returns a new BBox with rounded coordinates.
