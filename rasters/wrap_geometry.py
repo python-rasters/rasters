@@ -50,9 +50,8 @@ def wrap_geometry(geometry: Any, crs: Union[CRS, str] = None) -> SpatialGeometry
         # If the geometry is a RasterGeometry, return it as is
         return geometry
 
-    # Check if the geometry is already a SpatialGeometry by checking for specific types
-    if isinstance(geometry, (Point, MultiPoint, Polygon, MultiPolygon)):
-        # If the geometry is already a SpatialGeometry, return it as is
+    # If the geometry is already a SpatialGeometry (e.g., BBox), return it as is.
+    if isinstance(geometry, SpatialGeometry):
         return geometry
 
     if isinstance(geometry, GeoSeries) and all(geometry.geom_type == 'Point'):
