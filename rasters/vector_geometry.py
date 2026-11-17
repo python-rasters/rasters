@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Union
 
 import geopandas as gpd
+import numpy as np
 import shapely
 from pyproj import Transformer
 
@@ -67,9 +68,24 @@ class VectorGeometry(SpatialGeometry):
             VectorGeometry: The projected geometry.
         """
         crs = CRS(crs)
+
+        if self.crs == crs:
+            return self
+
+        transformer = Transformer.from_crs(self.crs, crs, always_xy=True)
+
+        def _transform_coords(coords: np.ndarray) -> np.ndarray:
+            if coords.shape[0] == 0:
+                return coords
+            x, y = transformer.transform(coords[:, 0], coords[:, 1])
+            if coords.shape[1] == 3:
+                return np.column_stack([x, y, coords[:, 2]])
+            return np.column_stack([x, y])
+
         result = self.contain(
-            shapely.ops.transform(Transformer.from_crs(self.crs, crs, always_xy=True).transform, self.geometry),
-            crs=crs)
+            shapely.transform(self.geometry, _transform_coords, include_z=self.geometry.has_z),
+            crs=crs
+        )
         return result
 
     @property

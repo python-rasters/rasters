@@ -13,7 +13,6 @@ from pyproj import Transformer
 from rasterio.windows import Window
 from scipy.ndimage import shift
 from shapely.geometry.base import BaseGeometry
-from shapely.ops import transform as shapely_transform
 from .local_UTM_proj4 import local_UTM_proj4
 
 from .CRS import WGS84
@@ -600,7 +599,10 @@ class RasterGeometry(SpatialGeometry):
 
         feature_shape = self.boundary_latlon.geometry
         sign = 2. * (0.5 * (feature_shape.bounds[1] + feature_shape.bounds[3]) >= 0.) - 1.
-        polar_shape = shapely_transform(to_polar, feature_shape)
+        polar_shape = shapely.transform(
+            feature_shape,
+            lambda coords: np.column_stack(to_polar(coords[:, 0], coords[:, 1]))
+        )
 
         self._crosses_antimeridian = polar_shape.intersects(antimeridian_wedge)
 
