@@ -40,3 +40,6 @@ uninstall:
 reinstall:
 	make uninstall
 	make install
+
+repomix:
+	npx repomix --ignore "**/*.tif,**/*.png,**/*.jpeg,**/*.aux.xml,**/*.ipynb"
