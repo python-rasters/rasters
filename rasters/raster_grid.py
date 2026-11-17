@@ -384,7 +384,7 @@ class RasterGrid(RasterGeometry):
         Returns:
             Affine: Affine transform object.
         """
-        return self.affine * Affine.translation(0.5, 0.5)
+        return self.affine @ Affine.translation(0.5, 0.5)
 
     @property
     def cell_width(self) -> float:
@@ -567,7 +567,7 @@ class RasterGrid(RasterGeometry):
             ]))
 
         y_indices, x_indices = self.boundary_indices
-        x_boundary, y_boundary = self.affine_center * (x_indices, y_indices)
+        x_boundary, y_boundary = self.affine_center @ (x_indices, y_indices)
         points = np.c_[x_boundary, y_boundary]
         boundary = Polygon(points, crs=self.crs)
 
@@ -692,7 +692,7 @@ class RasterGrid(RasterGeometry):
         Returns:
             np.ndarray: Array of x-coordinates.
         """
-        return (self.affine_center * (np.arange(self.cols), np.full(self.cols, 0, dtype=np.float32)))[0]
+        return (self.affine_center @ (np.arange(self.cols), np.full(self.cols, 0, dtype=np.float32)))[0]
 
     @property
     def y_vector(self) -> np.ndarray:
@@ -702,7 +702,7 @@ class RasterGrid(RasterGeometry):
         Returns:
             np.ndarray: Array of y-coordinates.
         """
-        return (self.affine_center * (np.full(self.rows, 0, dtype=np.float32), np.arange(self.rows)))[1]
+        return (self.affine_center @ (np.full(self.rows, 0, dtype=np.float32), np.arange(self.rows)))[1]
 
     @property
     def xy(self) -> Tuple[np.ndarray, np.ndarray]:
@@ -712,7 +712,7 @@ class RasterGrid(RasterGeometry):
         Returns:
             Tuple[np.ndarray, np.ndarray]: Arrays of x and y coordinates.
         """
-        return self.affine_center * np.meshgrid(np.arange(self.cols), np.arange(self.rows))
+        return self.affine_center @ np.meshgrid(np.arange(self.cols), np.arange(self.rows))
 
     def index_point(self, point: Point) -> Tuple[int, int]:
         """
@@ -727,7 +727,7 @@ class RasterGrid(RasterGeometry):
         native_point = point.to_crs(self.crs)
         x = native_point.x
         y = native_point.y
-        col, row = ~self.affine_center * (x, y)
+        col, row = ~self.affine_center @ (x, y)
         col = int(round(col))
         row = int(round(row))
         index = (row, col)
@@ -843,7 +843,7 @@ class RasterGrid(RasterGeometry):
         Returns:
             RasterGrid: A new RasterGrid with the shift applied.
         """
-        new_affine = self.affine * Affine.translation(x_shift / self.cell_size, y_shift / self.cell_size)
+        new_affine = self.affine @ Affine.translation(x_shift / self.cell_size, y_shift / self.cell_size)
         grid = RasterGrid.from_affine(new_affine, self.rows, self.cols, self.crs)
 
         return grid
