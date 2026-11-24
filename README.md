@@ -6,7 +6,22 @@ This Python software package provides a comprehensive solution for handling grid
 
 [Gregory H. Halverson](https://github.com/gregory-halverson-jpl) (they/them)<br>
 [gregory.h.halverson@jpl.nasa.gov](mailto:gregory.h.halverson@jpl.nasa.gov)<br>
-NASA Jet Propulsion Laboratory 329G
+NASA Jet Propulsion Laboratory 321H
+
+## Citing this Package
+
+If you use `rasters` in your research or software pipelines, please cite it using the following BibTeX entry:
+
+```bibtex
+@software{halverson_rasters_2026,
+  author       = {Halverson, Gregory H.},
+  title        = {rasters: Object-Oriented Gridded and Swath Raster Processing Toolkit for Python},
+  year         = {2026},
+  version      = {1.21.0},
+  publisher    = {GitHub},
+  url          = {https://github.com/python-rasters/rasters}
+}
+```
 
 The software addresses several challenges in the field. It makes swath remote sensing datasets more accessible and easier to work with. It also associates coordinate reference systems with vector geometries, simplifying transformations between projections.
 
@@ -37,7 +52,7 @@ This software improves over the rasterio package by encapsulating rasters as obj
 
 This software solves the problem of swath remote sensing datasets being inaccessible and difficult to work with. This software solves the problem of vector geometries in python not having coordinate reference systems associated with them. The software is inspired by and intended to be a python equivalent for the raster package in R and the Rasters.jl package in Julia.
 
-### Does your work relate to current or future NASA (include reimbursable) work that has value to the conduct of aeronautical and space activities?  If so, please explain:
+### Does your work relate to current or future NASA (include reimbursable) work that has value to the conduct of aeronautical and space activities?  If so, please explain:
 
 This software package was developed as part of a research grant by the NASA Research Opportunities in Space and Earth Sciences (ROSES) program. This software was designed for use by the Ecosystem Spaceborne Thermal Radiometer Experiment on Space Station (ECOSTRESS) mission as a precursor for the Surface Biology and Geology (SBG) mission, but it may be useful generally for remote sensing and GIS projects in python.
 
@@ -63,7 +78,7 @@ This software is written entirely in python and intended to be distributed using
 
 This software has been deployed for ECOSTRESS and ET-Toolbox.
 
-### Please identify the customer(s) and sponsors(s) outside of your section that requested and are using your software. 
+### Please identify the customer(s) and sponsors(s) outside of your section that requested and are using your software. 
 
 This package is being released according to the SPD-41 open-science requirements of NASA-funded ROSES projects.
 
@@ -417,9 +432,36 @@ masked_raster = raster.mask(mask)
 # Fill masked values with another raster
 filled = raster.fill(fill_raster)
 ```
-    
-## Changelog
 
-### 1.1.0
+## History
 
-The `KDTree` class can now save to file with the `.save` method and load from file with the `KDTree.load` class method.
+* **`v1.0.2` – `v1.2.0` (June – September 2024):** Launched as a single-file package (`rasters/rasters.py`) adapted from ECOSTRESS workflows at NASA JPL. Refactored vector geometry classes (`Point`, `MultiPoint`, `Polygon`, `MultiPolygon`) from Shapely inheritance to composition with explicit CRS tracking, added `msgpack` serialization (`KDTree.save()` and `KDTree.load()`), added `.wkt` representations, and switched swath point lookup to `scipy.spatial.cKDTree`.
+* **`v1.3.0` – `v1.4.6` (September 2024 – February 2025):** Split the monolith into dedicated single-responsibility modules (`CRS.py`, `bbox.py`, `point.py`, `polygon.py`, `kdtree.py`, `raster.py`, `raster_grid.py`, `raster_geolocation.py`, etc.), dropped the deprecated `pygeos` dependency in favor of `shapely` 2.x, added point extraction via `Raster.open(..., geometry=Point)`, added grid shifting (`RasterGrid.shift_xy()`, `shift_distance()`), and resolved macOS `pykdtree` build issues (`pykdtree>=1.3.11`).
+* **`v1.5.0` – `v1.16.1` (April – November 2025):** Added `linear_downscale()` and `bias_correct()`, configurable resampling in `mosaic()`, `MultiPoint` extraction in `Raster.open()`, `RasterGeolocation.window()` and `.subset()`, square-bracket geometry indexing (`grid[polygon]`, `geolocation[window]`), `GeoSeries` to `MultiPoint` wrapping, `Point.lat`/`Point.lon` properties, `RasterGrid` bounds properties (`xmin`, `xmax`, `ymin`, `ymax`), and multi-raster mosaicking/masking fixes.
+* **`v1.17.0` – `v1.21.0` (January – November 2026):** Expanded module docstrings and documentation, added `BBox.boundary_latlon`, expanded CI test coverage across Python `3.11`–`3.14`, fixed `BBox` handling in `wrap_geometry()`, and resolved deprecation warnings under Shapely 2.2+ (`shapely.transform()`), `affine` 2.4+ (`@` matrix multiplication), and NumPy 2.0+ (`__array_wrap__`).
+
+## Known Issues
+
+The following known issues are tracked in the [GitHub issue tracker](https://github.com/python-rasters/rasters/issues) as of `v1.21.0`:
+
+* **Vector & Geometry Edge Cases:**
+  * Calling `Polygon()` or `MultiPolygon()` with no arguments raises an `IndexError` instead of initializing an empty geometry ([#74](https://github.com/python-rasters/rasters/issues/74)).
+  * `RasterGeometry.point` returns a `ValueError` instance rather than raising it when the geometry is not a single cell ([#78](https://github.com/python-rasters/rasters/issues/78)).
+  * `BBox.round` truncates coordinates to whole integers without supporting an `ndigits` precision argument ([#85](https://github.com/python-rasters/rasters/issues/85)).
+  * `rasters/local_UTM_proj4_from_lat_lon.py` is an orphaned stub file with an empty function definition superseded by `rasters/local_UTM_proj4.py` ([#71](https://github.com/python-rasters/rasters/issues/71)).
+* **Raster Indexing, Slicing & Grid Operations:**
+  * `Raster.__setitem__()` fails on slice and tuple-slice assignments (`raster[0:5] = 0`, `raster[0:5, 0:5] = 0`) ([#75](https://github.com/python-rasters/rasters/issues/75)).
+  * Single-dimension indexing (`raster[0]` or `raster[0:5]`) raises a `TypeError` in `Raster._key()` ([#76](https://github.com/python-rasters/rasters/issues/76)).
+  * `Raster._slice()` mutates array view shapes in-place (`result.shape = new_shape`), failing on non-contiguous slices ([#82](https://github.com/python-rasters/rasters/issues/82)).
+  * `RasterGrid.resolution()` raises a `TypeError` when passed a scalar `float` instead of a tuple ([#77](https://github.com/python-rasters/rasters/issues/77)).
+  * `Raster.origin` delegates to a nonexistent `self.geometry.origin` attribute ([#79](https://github.com/python-rasters/rasters/issues/79)).
+  * `Raster.rescale()` resizes the data array to the original `(self.rows, self.cols)` shape instead of the target `(geometry.rows, geometry.cols)` shape ([#83](https://github.com/python-rasters/rasters/issues/83)).
+* **MultiRaster, Mosaicking & Reprojection:**
+  * `MultiRaster.contain()` / `MultiRaster.__init__()` nests `metadata` under a `"metadata"` key instead of unpacking it ([#80](https://github.com/python-rasters/rasters/issues/80)).
+  * `Raster.to_grid()` raises a `TypeError` on boolean rasters when `nodata` is `None` ([#81](https://github.com/python-rasters/rasters/issues/81)).
+  * `mosaic()` fails on generator/iterator inputs and evaluates `geometry.shape` before resolving default geometry from `images[0]` ([#84](https://github.com/python-rasters/rasters/issues/84)).
+* **File I/O, Testing & Warnings:**
+  * `Raster.from_geotiff()` calls a nonexistent `cls.from_file()` method and rejects `.tiff` extensions due to operator precedence ([#72](https://github.com/python-rasters/rasters/issues/72)).
+  * `Raster.to_COG()` invokes `gdal_translate` via `os.system()` without checking exit status and uses naive `.replace(".tif", ".temp.tif")` path substitution ([#87](https://github.com/python-rasters/rasters/issues/87)).
+  * `RasterGeometry` uses `warnings.filterwarnings('ignore')` followed by `warnings.resetwarnings()` instead of `with warnings.catch_warnings()`, clearing external warning filters ([#86](https://github.com/python-rasters/rasters/issues/86)).
+  * `tests/test_write_geotiff.py` is currently an empty placeholder without GeoTIFF write tests ([#73](https://github.com/python-rasters/rasters/issues/73)).
